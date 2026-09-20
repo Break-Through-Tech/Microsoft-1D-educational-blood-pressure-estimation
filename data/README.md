@@ -1,103 +1,39 @@
 # Dataset Setup
 
-This project uses the **Cuff-Less Blood Pressure Estimation** dataset from the UCI Machine Learning Repository.
+This project uses the UCI [Cuff-Less Blood Pressure Estimation](https://archive.ics.uci.edu/dataset/340/cuff%2Bless%2Bblood%2Bpressure%2Bestimation) dataset. The original files are several gigabytes, so they remain local and are not committed to Git.
 
-The raw dataset is **not stored in this GitHub repository** because the full dataset is several gigabytes in size. Each team member who needs to run the data-loading, preprocessing, or modeling pipeline should download the dataset locally.
+See [DATA_NOTES.md](DATA_NOTES.md) for the raw and processed schemas, windowing math, signal roles, validation findings, and open preprocessing questions.
 
-## 1. Download the Dataset
+## Expected Directory Structure
 
-Download the dataset from the official UCI repository:
-
-**Dataset:** Cuff-Less Blood Pressure Estimation
-**Source:** https://archive.ics.uci.edu/dataset/340/cuff%2Bless%2Bblood%2Bpressure%2Bestimation
-
-The dataset contains four MATLAB v7.3 `.mat` files:
-
-```text
-Part_1.mat
-Part_2.mat
-Part_3.mat
-Part_4.mat
-```
-
-Each part contains physiological signal records including:
-
-* PPG: photoplethysmogram signal
-* ABP: arterial blood pressure signal
-* ECG: electrocardiogram signal
-
-For the current project scope, we primarily use the **PPG** and **ABP** signals.
-
-## 2. Place the Files in the Project
-
-After downloading the four files, place them inside the following directory:
-
-```text
-data/raw/
-```
-
-The expected structure is:
+Download the four MATLAB v7.3 files and keep their original names:
 
 ```text
 data/
-├── README.md
-└── raw/
-    ├── Part_1.mat
-    ├── Part_2.mat
-    ├── Part_3.mat
-    └── Part_4.mat
+|-- README.md
+|-- DATA_NOTES.md
+|-- load_files.py
+`-- raw/
+    |-- Part_1.mat
+    |-- Part_2.mat
+    |-- Part_3.mat
+    `-- Part_4.mat
 ```
 
-## 3. Keep the Original Filenames
+The raw files are loaded with `h5py`. MATLAB v7.3 files use HDF5 internally and are not supported by the usual `scipy.io.loadmat` workflow.
 
-Do not rename the downloaded `.mat` files.
+## Environment And Commands
 
-The data-loading code expects the filenames to follow this convention:
+From the repository root on Windows PowerShell:
 
-```text
-Part_1.mat
-Part_2.mat
-Part_3.mat
-Part_4.mat
+```powershell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install h5py numpy pandas scipy jupyter
+python data/load_files.py
+jupyter notebook notebooks/read_data.ipynb
 ```
 
-Using different capitalization, spacing, or naming may cause the loader to fail.
+`load_files.py` reads from `data/raw/` and creates `data/processed_dataset.npz`. Both the raw files and generated dataset must remain Git-ignored.
 
-## 4. Loading the Dataset
-
-The MATLAB files use the MATLAB v7.3 format and are loaded in Python using `h5py`.
-
-The team data-loading utility is located at:
-
-```text
-[PLACEHOLDER: path/to/loader_file.py]
-```
-
-Example usage:
-
-```python
-[PLACEHOLDER: loader usage]
-```
-
-Once the loader is finalized, this section will include the exact command or Python code required to load the dataset.
-
-## 5. Raw Data and Git
-
-The files inside `data/raw/` should remain local and should **not be committed to GitHub**.
-
-The repository's `.gitignore` should exclude the raw dataset while allowing this README and the directory structure to remain tracked.
-
-Expected `.gitignore` configuration:
-
-```gitignore
-data/raw/*
-!data/raw/.gitkeep
-```
-
-The original UCI files should remain unchanged. Any cleaned, windowed, or otherwise transformed versions of the data should be stored separately from the raw files.
-
-## Dataset Reference
-
-UCI Machine Learning Repository: **Cuff-Less Blood Pressure Estimation**
-
-https://archive.ics.uci.edu/dataset/340/cuff%2Bless%2Bblood%2Bpressure%2Bestimation
+Use `notebooks/read_data.ipynb`, not a file under `.ipynb_checkpoints/`. The checkpoint directory is Jupyter's automatic recovery area.
