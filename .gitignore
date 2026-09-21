@@ -1,6 +1,7 @@
 
-data/Part_1.mat
-data/Part_2.mat
-data/Part_3.mat
-data/Part_4.mat
-processed_dataset.npz
+data/raw/Part_1.mat
+data/raw/Part_2.mat
+data/raw/Part_3.mat
+data/raw/Part_4.mat
+data/processed_dataset.npz
+venv/

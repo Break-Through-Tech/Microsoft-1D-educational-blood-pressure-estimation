@@ -16,9 +16,9 @@ from pathlib import Path
 import h5py
 import numpy as np
 
-DATA_DIR = Path(__file__).parent
+DATA_DIR = Path(__file__).parent / "raw"
 MAT_FILES = ["Part_1.mat", "Part_2.mat", "Part_3.mat", "Part_4.mat"]
-OUTPUT_PATH = DATA_DIR / "processed_dataset.npz"
+OUTPUT_PATH = Path(__file__).parent / "processed_dataset.npz"
 
 WINDOW_SIZE = 625  # 125 Hz * 5 seconds
 
