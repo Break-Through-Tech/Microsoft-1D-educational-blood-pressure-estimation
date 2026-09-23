@@ -8,7 +8,8 @@ Column counts (samples per recording) VARY across records with no fixed pattern 
 across all 4 files (12,000 records total) N ranges from 1,000 to 74,000.
 Only ~16% of records (1,918 / 12,000) have a column count
 that is an exact multiple of 625, so most recordings produce one or more full 625-sample
-windows plus a leftover remainder which is filled with nulls.
+windows plus a leftover remainder. This script drops leftover samples that do not fill
+a complete 625-sample window.
 """
 
 from pathlib import Path
@@ -17,6 +18,7 @@ import h5py
 import numpy as np
 
 DATA_DIR = Path(__file__).parent
+RAW_DATA_DIR = DATA_DIR / "raw"
 MAT_FILES = ["Part_1.mat", "Part_2.mat", "Part_3.mat", "Part_4.mat"]
 OUTPUT_PATH = DATA_DIR / "processed_dataset.npz"
 
@@ -43,7 +45,7 @@ def split_into_windows(record, window_size=WINDOW_SIZE):
     return usable.reshape(n_windows, window_size, 3)
 
 
-def build_datasets(data_dir=DATA_DIR, mat_files=MAT_FILES, window_size=WINDOW_SIZE):
+def build_datasets(data_dir=RAW_DATA_DIR, mat_files=MAT_FILES, window_size=WINDOW_SIZE):
     """Load all mat files and return (ppg, abp, ecg) arrays of shape (n_windows, window_size)."""
     ppg_windows, abp_windows, ecg_windows = [], [], []
 
