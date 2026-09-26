@@ -1,15 +1,14 @@
-"""Audit raw PPG/ABP records and verify the teammate's processed archive.
+"""Audit raw PPG/ABP records and check the team's windowed data.
 
 Run from the repository root with the project's virtual environment:
     .venv/Scripts/python.exe eda/audit.py
 
-This analysis does not rewrite the team's loader, notebook, or processed dataset.
-Beat-based labels below are exploratory comparisons, not approved training labels.
+Prints a short summary. It does not rewrite the team's data or notebook.
+Beat-based labels are an exploratory comparison, not approved training labels.
 """
 
 import argparse
 import hashlib
-import json
 import zipfile
 from collections import Counter
 from pathlib import Path
@@ -100,6 +99,7 @@ def verify_processed(path, expected_rows, raw_hashes):
 
 def audit(raw_dir):
     stats = Counter()
+    zero_counts = []
     raw_window_digests = {channel: hashlib.blake2b(digest_size=16) for channel in ("ppg", "abp")}
     part_counts = {}
     lengths = []
@@ -123,12 +123,16 @@ def audit(raw_dir):
                     raise ValueError(f"Unexpected shape in {filename} record {record_index}: {record.shape}")
                 digest = hashlib.blake2b(record.tobytes(), digest_size=16).hexdigest()
                 source_key = [filename, int(record_index)]
-                if digest in seen_record_hashes:
-                    duplicate_records.append({"first": seen_record_hashes[digest], "duplicate": source_key})
+                duplicate_of = seen_record_hashes.get(digest)
+                if duplicate_of is not None:
+                    duplicate_records.append({"first": duplicate_of, "duplicate": source_key})
                 else:
                     seen_record_hashes[digest] = source_key
                 n = record.shape[0]
                 n_windows = n // WINDOW
+                if duplicate_of is not None and n_windows:
+                    stats["duplicate_copy_windows"] += n_windows
+                    stats["cross_part_duplicate_records"] += duplicate_of[0] != filename
                 lengths.append(n)
                 windows_per_record.append(n_windows)
                 stats["raw_samples_per_channel"] += n
@@ -155,6 +159,8 @@ def audit(raw_dir):
                 ppg_max = ppg.max(axis=1)
                 ppg_range = ppg_max - ppg_min
                 abp_range = sbp - dbp
+                window_zero_counts = (ppg == 0).sum(axis=1)
+                zero_counts.extend(window_zero_counts[window_zero_counts > 0].tolist())
                 batch = {
                     "sbp_max": sbp, "dbp_min": dbp, "pulse_pressure": abp_range,
                     "ppg_min": ppg_min, "ppg_max": ppg_max, "ppg_range": ppg_range,
@@ -169,6 +175,8 @@ def audit(raw_dir):
                 stats["windows_with_nonpositive_ppg"] += int((ppg_min <= 0).sum())
                 stats["windows_with_nonpositive_abp"] += int((dbp <= 0).sum())
                 stats["windows_with_zero_ppg"] += int((ppg_min == 0).sum())
+                stats["windows_with_one_zero_ppg_sample"] += int((window_zero_counts == 1).sum())
+                stats["windows_with_32_or_more_zero_ppg_samples"] += int((window_zero_counts >= 32).sum())
                 stats["windows_with_dbp_exactly_50"] += int((dbp == 50).sum())
                 stats["windows_with_sbp_at_least_199_9"] += int((sbp >= 199.9).sum())
                 stats["flat_ppg_windows"] += int((ppg_range == 0).sum())
@@ -220,6 +228,7 @@ def audit(raw_dir):
         "record_lengths": distribution(lengths),
         "windows_per_record": distribution(windows_per_record),
         "window_metrics": {key: distribution(values) for key, values in metrics.items()},
+        "zero_samples_per_affected_window": distribution(zero_counts),
         "part_metrics": {part: {key: distribution(values) for key, values in part_metrics[part].items()} for part in PARTS},
         "beat_comparison": {key: distribution(values) for key, values in beat.items()},
         "beat_sample_per_part": dict(sample_per_part),
@@ -233,7 +242,6 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--raw-dir", type=Path, default=ROOT / "data" / "raw")
     parser.add_argument("--processed-path", type=Path, default=ROOT / "data" / "processed_dataset.npz")
-    parser.add_argument("--output", type=Path, default=ROOT / "eda" / "results.json")
     args = parser.parse_args()
     result = audit(args.raw_dir)
     if args.processed_path.exists():
@@ -242,10 +250,25 @@ def main():
         )
     else:
         result["processed_archive_check"] = {"status": "archive not found; raw audit only"}
-    args.output.parent.mkdir(parents=True, exist_ok=True)
-    args.output.write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
-    print(f"Audited {result['counts']['records']:,} records / {result['counts']['windows']:,} windows")
-    print(f"Wrote {args.output}")
+    counts = result["counts"]
+    print(f"Source records: {counts['records']:,}; five-second windows: {counts['windows']:,}")
+    print(f"PPG/ABP nonfinite samples: {counts['ppg_nonfinite_samples']}/{counts['abp_nonfinite_samples']}")
+    print(f"Windows with any zero PPG sample: {counts['windows_with_zero_ppg']:,}")
+    print(f"  One zero sample: {counts['windows_with_one_zero_ppg_sample']:,}; 32 or more: {counts['windows_with_32_or_more_zero_ppg_samples']:,}")
+    print(f"Duplicate source-record copies: {counts['duplicate_records']}; cross-part: {counts['cross_part_duplicate_records']}; windows in duplicate copies: {counts['duplicate_copy_windows']:,}")
+    cross_part_example = next((pair for pair in result["duplicate_record_examples"] if pair["first"][0] != pair["duplicate"][0]), None)
+    if cross_part_example:
+        first, copy = cross_part_example["first"], cross_part_example["duplicate"]
+        print(f"  Example (zero-based): {first[0]} record {first[1]} = {copy[0]} record {copy[1]}")
+    labels = result["window_metrics"]
+    print(f"Baseline label medians (mmHg): SBP {labels['sbp_max']['quantiles']['0.5']:.2f}; DBP {labels['dbp_min']['quantiles']['0.5']:.2f}")
+    beat = result["beat_comparison"]
+    print(f"Exploratory whole-window minus beat-median labels (mmHg): SBP {beat['sbp_difference']['quantiles']['0.5']:+.2f}; DBP {beat['dbp_difference']['quantiles']['0.5']:+.2f}")
+    check = result["processed_archive_check"]
+    if "ppg" in check:
+        print(f"Local .npz matches raw-derived PPG/ABP windows: {check['ppg']['matches_raw_windows_exactly']}/{check['abp']['matches_raw_windows_exactly']}")
+    else:
+        print(check["status"])
 
 
 if __name__ == "__main__":
