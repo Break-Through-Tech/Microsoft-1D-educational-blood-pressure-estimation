@@ -1,6 +1,6 @@
-# PPG/ABP exploratory data analysis
+# PPG/ABP EDA: methods and detailed findings
 
-Run `.venv\Scripts\python.exe eda/kushagra_eda.py` from the repository root to regenerate [the machine-readable summary](kushagra_eda_summary.json). The script reads all four local raw MATLAB v7.3 files, one record at a time, then checks the existing processed archive in small batches. It writes only the summary JSON. This report describes that run; it does not establish clinical signal-quality thresholds or finalized labels.
+For a short handoff, start with [README.md](README.md). Run `.venv\Scripts\python.exe eda/audit.py` from the repository root to regenerate [the machine-readable results](results.json). The script reads all four local raw MATLAB v7.3 files, one record at a time, then checks the existing processed archive in small batches. It writes only the JSON results. This report describes that run; it does not establish clinical signal-quality thresholds or finalized labels.
 
 ## What is being processed
 
@@ -19,7 +19,7 @@ A **source record** is one original continuous recording referenced by a cell in
 
 - `data/load_files.py` is the team's **loading/windowing** step. It turns the variable-length raw records into aligned, fixed-size PPG/ABP/ECG arrays. The existing local processed archive is consistent with it for PPG and ABP. This step does not create final SBP/DBP labels or a cleaned modeling dataset.
 - `notebooks/read_data.ipynb` is the merged `jliu/clean-data` work. It reads the processed archive, adds whole-window ABP max/min labels, and experiments with zero-PPG handling. It does **not** train a model or save a cleaned dataset. Its saved output reports 5,407 PPG rows containing zero and 53 rows dropped by a greater-than-5%-of-627 rule. The subsequent `fillna` acts on NaNs rather than zeros, and its chained assignment emits a pandas warning in the saved output. After row deletion, using the original row labels with `iloc` can select different rows; the row mean also includes the two pressure-label columns. Treat these cells as an experiment, not an approved cleaning pipeline.
-- `eda/kushagra_eda.py` and this report audit the source data, verify the processed PPG/ABP arrays, and compare provisional labels on a defined sample. They do not replace the loader or produce a new cleaned dataset.
+- `eda/audit.py` and this report audit the source data, verify the processed PPG/ABP arrays, and compare provisional labels on a defined sample. They do not replace the loader or produce a new cleaned dataset.
 
 ## Full-data audit
 
