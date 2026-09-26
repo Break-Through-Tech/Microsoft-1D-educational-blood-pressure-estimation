@@ -3,7 +3,7 @@
 Run from the repository root with the project's virtual environment:
     .venv/Scripts/python.exe eda/audit.py
 
-Prints a short summary. It does not rewrite the team's data or notebook.
+Prints an explained summary. It does not rewrite the team's data or notebook.
 Beat-based labels are an exploratory comparison, not approved training labels.
 """
 
@@ -251,24 +251,48 @@ def main():
     else:
         result["processed_archive_check"] = {"status": "archive not found; raw audit only"}
     counts = result["counts"]
-    print(f"Source records: {counts['records']:,}; five-second windows: {counts['windows']:,}")
-    print(f"PPG/ABP nonfinite samples: {counts['ppg_nonfinite_samples']}/{counts['abp_nonfinite_samples']}")
-    print(f"Windows with any zero PPG sample: {counts['windows_with_zero_ppg']:,}")
-    print(f"  One zero sample: {counts['windows_with_one_zero_ppg_sample']:,}; 32 or more: {counts['windows_with_32_or_more_zero_ppg_samples']:,}")
-    print(f"Duplicate source-record copies: {counts['duplicate_records']}; cross-part: {counts['cross_part_duplicate_records']}; windows in duplicate copies: {counts['duplicate_copy_windows']:,}")
+    print("PPG/ABP dataset audit (125 samples/second; 625 samples = 5 seconds)")
+    print("\nWindow completeness")
+    print(f"  Source recordings examined: {counts['records']:,}")
+    print(f"  Complete 625-sample windows kept: {counts['windows']:,}")
+    print("  Incomplete or empty windows saved: 0 (the loader keeps only complete windows)")
+    print(f"  Recordings with a short trailing segment discarded: {counts['records_with_tail']:,}")
+    print(f"  Samples discarded in those tails: {counts['dropped_tail_samples_per_channel']:,} per channel")
+    print("  A discarded tail has fewer than 625 samples; it is not a saved window.")
+
+    print("\nSignal values")
+    print(f"  PPG / ABP NaN or infinite samples: {counts['ppg_nonfinite_samples']:,} / {counts['abp_nonfinite_samples']:,}")
+    zero_pct = 100 * counts["windows_with_zero_ppg"] / counts["windows"]
+    print(f"  Complete PPG windows containing a numeric zero: {counts['windows_with_zero_ppg']:,} ({zero_pct:.2f}%)")
+    print(f"    Exactly one zero: {counts['windows_with_one_zero_ppg_sample']:,}; at least 32 zeros: {counts['windows_with_32_or_more_zero_ppg_samples']:,}")
+    print("  A numeric zero is a sample value, not an empty or incomplete window.")
+
+    print("\nRepeated recordings")
+    print(f"  Identical source-record copies found: {counts['duplicate_records']:,} ({counts['cross_part_duplicate_records']:,} across part files)")
+    print(f"  Windows in those repeated copies: {counts['duplicate_copy_windows']:,}")
     cross_part_example = next((pair for pair in result["duplicate_record_examples"] if pair["first"][0] != pair["duplicate"][0]), None)
     if cross_part_example:
         first, copy = cross_part_example["first"], cross_part_example["duplicate"]
-        print(f"  Example (zero-based): {first[0]} record {first[1]} = {copy[0]} record {copy[1]}")
+        print(f"  Example, zero-based indices: {first[0]} record {first[1]} = {copy[0]} record {copy[1]}")
+    print("  Keep matching recordings together in train/test splits to avoid leakage.")
     labels = result["window_metrics"]
-    print(f"Baseline label medians (mmHg): SBP {labels['sbp_max']['quantiles']['0.5']:.2f}; DBP {labels['dbp_min']['quantiles']['0.5']:.2f}")
+    print("\nProvisional ABP labels")
+    print(f"  Median of window maxima (SBP): {labels['sbp_max']['quantiles']['0.5']:.2f} mmHg")
+    print(f"  Median of window minima (DBP): {labels['dbp_min']['quantiles']['0.5']:.2f} mmHg")
     beat = result["beat_comparison"]
-    print(f"Exploratory whole-window minus beat-median labels (mmHg): SBP {beat['sbp_difference']['quantiles']['0.5']:+.2f}; DBP {beat['dbp_difference']['quantiles']['0.5']:+.2f}")
+    print(f"  In {counts['beat_sample_usable_windows']:,} sampled windows, median difference from detected beat medians:")
+    print(f"    Window maximum minus beat-peak median: {beat['sbp_difference']['quantiles']['0.5']:+.2f} mmHg")
+    print(f"    Window minimum minus beat-trough median: {beat['dbp_difference']['quantiles']['0.5']:+.2f} mmHg")
+    print("  The beat detector is exploratory; these differences do not validate new labels.")
     check = result["processed_archive_check"]
+    print("\nExisting processed data file")
     if "ppg" in check:
-        print(f"Local .npz matches raw-derived PPG/ABP windows: {check['ppg']['matches_raw_windows_exactly']}/{check['abp']['matches_raw_windows_exactly']}")
+        ppg_match = "yes" if check["ppg"]["matches_raw_windows_exactly"] else "NO"
+        abp_match = "yes" if check["abp"]["matches_raw_windows_exactly"] else "NO"
+        print(f"  PPG / ABP arrays match raw-derived windows in order: {ppg_match} / {abp_match}")
+        print("  This checks loading consistency, not signal quality.")
     else:
-        print(check["status"])
+        print(f"  {check['status']}")
 
 
 if __name__ == "__main__":
