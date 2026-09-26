@@ -1,7 +1,7 @@
 """Audit raw PPG/ABP records and verify the teammate's processed archive.
 
 Run from the repository root with the project's virtual environment:
-    .venv/Scripts/python.exe eda/kushagra_eda.py
+    .venv/Scripts/python.exe eda/audit.py
 
 This analysis does not rewrite the team's loader, notebook, or processed dataset.
 Beat-based labels below are exploratory comparisons, not approved training labels.
@@ -233,7 +233,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--raw-dir", type=Path, default=ROOT / "data" / "raw")
     parser.add_argument("--processed-path", type=Path, default=ROOT / "data" / "processed_dataset.npz")
-    parser.add_argument("--output", type=Path, default=ROOT / "eda" / "kushagra_eda_summary.json")
+    parser.add_argument("--output", type=Path, default=ROOT / "eda" / "results.json")
     args = parser.parse_args()
     result = audit(args.raw_dir)
     if args.processed_path.exists():
