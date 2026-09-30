@@ -11,7 +11,7 @@
 | Kushagra Dhall    | @KR-0000 | EDA, Data setup            |
 | Ingrid Escalante-Hernandez   | @imehtn     | Data collection, exploratory data analysis (EDA), dataset documentation  |
 | Katherine Wu     | @wukatherine  | EDA, Data visualization                 |
-| Joanna Liu      | @jliu25       | Missing values  |
+| Joanna Liu      | @lte24       | Missing values  |
 | Sarah To       | @aizhenii    | Outliers           |
 | Kien Nguyen       | @tkien17    |   placeholder         |
 | Harshitha Venkateswaran       | @ (add username)    |       placeholder     |
