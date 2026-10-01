@@ -1,4 +1,6 @@
-# AI Studio Challenge Project Title
+# CufflessAI: An Educational Blood Pressure Estimation
+
+See the [project roadmap](ROADMAP.md) for the current implementation assessment, research-informed next steps, proposed October–November phases, and completion criteria. Dataset findings are documented in [data notes](data/DATA_NOTES.md) and the [EDA summary](eda/EDA-readme.md).
 
 > 💡 **Note for the team:** This is just a template. Update the above title with your AI Studio Challenge Project name. Remove all guidance notes and example text in this template and populate this README with your own content. You can work on this README throughout AI Studio, and get feedback from your AI Studio Coach and Challenge Advisor before finalizing it.  
 
@@ -6,15 +8,15 @@
 
 ### 👥 **Team Members**
 
-**Example:**
-
 | Name             | GitHub Handle | Contribution                                                             |
 |------------------|---------------|--------------------------------------------------------------------------|
-| Taylor Nguyen    | @taylornguyen | Data exploration, visualization, overall project coordination            |
-| Jordan Ramirez   | @jramirez     | Data collection, exploratory data analysis (EDA), dataset documentation  |
-| Amina Hassan     | @aminahassan  | Data preprocessing, feature engineering, data validation                 |
-| Priya Mehta      | @pmehta       | Model selection, hyperparameter tuning, model training and optimization  |
-| Chris Park       | @chrispark    | Model evaluation, performance analysis, results interpretation           |
+| Kushagra Dhall    | @KR-0000 | EDA, Data setup            |
+| Ingrid Escalante-Hernandez   | @imehtn     | Data collection, exploratory data analysis (EDA), dataset documentation  |
+| Katherine Wu     | @wukatherine  | EDA, Data visualization                 |
+| Joanna Liu      | @lte24       | Missing values  |
+| Sarah To       | @aizhenii    | Outliers           |
+| Kien Nguyen       | @tkien17    |   placeholder         |
+| Harshitha Venkateswaran       | @ (add username)    |       placeholder     |
 
 ---
 
