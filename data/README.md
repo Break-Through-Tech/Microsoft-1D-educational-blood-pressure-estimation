@@ -34,6 +34,22 @@ python data/load_files.py
 jupyter notebook notebooks/read_data.ipynb
 ```
 
-`load_files.py` reads from `data/raw/` and creates `data/processed_dataset.npz`. Both the raw files and generated dataset must remain Git-ignored.
+`load_files.py` reads from `data/raw/` and creates `data/processed_dataset.npz` with original signal rows, stable identities, and saved recording-based splits. It streams the build and safely replaces the archive only after verification. Raw files and the archive remain Git-ignored. Existing notebooks still read all original rows; use the split loader for model development:
+
+```python
+from data.load_files import iter_split_windows
+
+for batch in iter_split_windows("train"):
+    ppg, abp = batch.ppg, batch.abp
+    window_ids = batch.window_ids
+    # Retain these IDs with features, labels, and filtering decisions.
+```
+
+Use `validation` to choose settings and `test` only for the frozen final model. Duplicate copies are excluded automatically. Scaling/imputation must be fitted on training data only. Details and limitations are in [DATA_NOTES.md](DATA_NOTES.md).
+
+```powershell
+python data/example_split_usage.py --split train --limit 1000
+python -m unittest discover -s tests -v
+```
 
 Use `notebooks/read_data.ipynb`, not a file under `.ipynb_checkpoints/`. The checkpoint directory is Jupyter's automatic recovery area.
