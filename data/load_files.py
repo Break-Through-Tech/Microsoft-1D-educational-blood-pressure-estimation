@@ -4,6 +4,10 @@ into non-overlapping 5-second (625-sample @ 125 Hz) windows, producing three ali
 datasets: PPG, ABP, and ECG. Row i in each dataset is the same time window, so the
 datasets can be joined by index (e.g. ppg_dataset[i] <-> abp_dataset[i]).
 
+The command-line builder also saves stable identities and recording-based split
+assignments. Use data.dataset_splits.iter_split_windows for model inputs; direct
+array reads retain every original row, including exact duplicate copies.
+
 Column counts (samples per recording) VARY across records with no fixed pattern -
 across all 4 files (12,000 records total) N ranges from 1,000 to 74,000.
 Only ~16% of records (1,918 / 12,000) have a column count
@@ -30,11 +34,13 @@ PPG_COL, ABP_COL, ECG_COL = 0, 1, 2
 
 def load_mat_records(filepath):
     """Yield each recording in a v7.3 .mat file as an (N, 3) array of PPG/ABP/ECG samples."""
-    with h5py.File(filepath, "r") as f:
-        var_name = filepath.stem  # e.g. "Part_1", matches the top-level HDF5 key
-        refs = f[var_name]
-        for i in range(refs.shape[0]):
-            yield f[refs[i, 0]][()]
+    try:
+        from .dataset_splits import iter_source_records
+    except ImportError:
+        from dataset_splits import iter_source_records
+    filepath = Path(filepath)
+    for _, _, record in iter_source_records(filepath.parent, [filepath.name]):
+        yield record
 
 
 def split_into_windows(record, window_size=WINDOW_SIZE):
@@ -71,13 +77,22 @@ def save_datasets(ppg_dataset, abp_dataset, ecg_dataset, output_path=OUTPUT_PATH
 
 
 def main():
-    """Build the PPG/ABP/ECG window datasets from all mat files and save them to disk."""
-    ppg_dataset, abp_dataset, ecg_dataset = build_datasets()
-    print(f"PPG dataset shape: {ppg_dataset.shape}")
-    print(f"ABP dataset shape: {abp_dataset.shape}")
-    print(f"ECG dataset shape: {ecg_dataset.shape}")
-    save_datasets(ppg_dataset, abp_dataset, ecg_dataset)
-    print(f"Saved datasets to {OUTPUT_PATH}")
+    """Prepare original windows with recording identities and saved splits."""
+    import argparse
+    try:
+        from .dataset_splits import prepare_dataset
+    except ImportError:
+        from dataset_splits import prepare_dataset
+    parser = argparse.ArgumentParser(description=main.__doc__)
+    parser.add_argument("--raw-dir", type=Path, default=RAW_DATA_DIR)
+    parser.add_argument("--output", type=Path, default=OUTPUT_PATH)
+    parser.add_argument("--config", type=Path, default=DATA_DIR.parent / "configs" / "split.json")
+    args = parser.parse_args()
+    report = prepare_dataset(args.raw_dir, MAT_FILES, args.output, args.config)
+    for split in ("train", "validation", "test", "excluded"):
+        selected = [r for r in report["records"] if r["split"] == split]
+        print(f"{split}: {len(selected):,} records, {sum(r['window_count'] for r in selected):,} windows")
+    print(f"Saved datasets to {args.output}")
 
 
 if __name__ == "__main__":

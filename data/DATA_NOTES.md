@@ -72,7 +72,7 @@ The raw records contain 333,690,000 time positions per channel. Windowing drops 
 
 ## Processed Arrays
 
-`load_files.py` writes three aligned arrays into `data/processed_dataset.npz`:
+`python data/load_files.py` writes archive format 2 to `data/processed_dataset.npz`. Its three original aligned arrays remain:
 
 ```text
 ppg: (528828, 625)
@@ -92,6 +92,35 @@ window 2     ppg      ppg      ppg     ...      ppg
 
 For any row index `i`, `ppg[i]`, `abp[i]`, and `ecg[i]` represent the same five-second period.
 
+The archive also contains `window_ids`, `source_record_ids`, and `split_assignments`, each with 528,828 entries in that same row order. `format_version` is the scalar 2. `preparation_json` stores the complete recording map, exact-duplicate relationships, dropped tails, per-channel nonfinite counts, source checksums, split configuration, and package versions. None of these fields is a prediction feature.
+
+IDs use `Part_1:record_1055:window_0`. Its source ID is `Part_1:record_1055`; local window 0 uses samples `[0, 625)`. Window `j` uses `[j * 625, (j + 1) * 625)`. Each recording's `first_npz_row` identifies its original archive offset, including duplicate copies.
+
+Exact-record comparison includes shape, dtype, and all three channels. Keep the earliest source copy for modeling; the other 14 records / 700 windows have split `excluded`. Their signals remain in the archive for existing notebook reads. The split loader returns 11,986 recordings / 528,128 windows before signal cleaning or label/feature failures.
+
+Canonical recordings are allocated approximately 70/15/15 using seed 2026 and largest-remainder integer rounding. Identifiable examples already reviewed in the EDA notebooks, including historical saved examples, are listed in `configs/split.json`. Their canonical recordings are forced into training, counting toward the training allocation. This is recording separation, not verified patient separation; shifted/partial overlaps remain possible. Overall EDA happened before the split was reserved.
+
+The builder reads one recording at a time and streams NPY entries into a temporary compressed NPZ. Before replacing an existing archive, it checks every channel's shape, dtype, and full waveform-byte digest against the old file, validates metadata, and confirms source checksums have not changed. Failure leaves the existing archive intact. The command needs temporary space for another compressed archive.
+
+## Accessing a split
+
+From the repository root:
+
+```python
+from data.dataset_splits import iter_split_windows
+
+for batch in iter_split_windows("train", batch_size=1024):
+    ppg = batch.ppg
+    abp = batch.abp
+    window_ids = batch.window_ids
+    source_ids = batch.source_record_ids
+    # Extract PPG features and ABP labels separately; retain window_ids with both.
+```
+
+The loader scans the archive sequentially with bounded waveform memory, returns at most 1,024 selected windows per batch, and excludes duplicate copies. It does not clean signals or derive labels. Smaller batches can result when original rows belong to other splits. Reading a complete split scans all PPG/ABP rows; this prioritizes compatibility and memory use over random access. Learn normalization/imputation only from training rows, then apply the fitted transformation to validation/test. Keep test out of feature selection and tuning.
+
+Run `python data/example_split_usage.py --split train --limit 1000` for an example preserving IDs through a finite-signal filter. Use `validation` or `test` to exercise those loaders; the example calculates no model scores. Legacy archives without metadata must be rebuilt. Notebook code that reads the entire `ppg` array still sees every original row and must adopt this loader before claiming split-based results.
+
 ## PPG, ABP, And Blood Pressure Labels
 
 PPG is an optical signal that tracks changes in blood volume near the fingertip. Its amplitude values are signal measurements, not pressure in mmHg. PPG does contain systolic and diastolic phases and useful pulse-shape information, but its maxima and minima are not automatically SBP and DBP measurements.
@@ -109,14 +138,16 @@ During model training and evaluation, ABP supplies the correct answers. At infer
 
 ## Current Label Extraction
 
-The current notebook uses the maximum and minimum of an entire ABP window:
+The current notebooks call `data/bp_utils.py`, which uses `scipy.signal.find_peaks`:
 
 ```text
-SBP label = maximum ABP value in the five-second window
-DBP label = minimum ABP value in the five-second window
+SBP label = mean of detected ABP peak values
+DBP label = mean of detected ABP valley values
 ```
 
-This is a simple baseline, not a finalized labeling method. A five-second window usually contains several heartbeats. A stronger approach would detect each valid ABP peak and valley, reject malformed or implausible beats, and aggregate the valid beat-level values into one SBP/DBP pair for the window. The team still needs to determine the detection parameters, validity limits, and whether to use a mean or median.
+Missing peaks or valleys produce NaN. This implementation does not pair complete beats, set detection parameters, or validate signal quality. Whole-window maxima/minima remain a separate proposed baseline export. The archive contains neither label method; callers must calculate and version labels using aligned ABP. New label methods require evidence before adoption.
+
+`notebooks/read_data.ipynb` currently drops windows with more than 10% zeros in either signal and replaces remaining zeros with each row's mean of nonzero samples, after calculating labels. These changes are in notebook memory only. The split preparation does not apply or endorse those rules; zero semantics and suitable cleaning remain open.
 
 ## Pipeline Roles
 
@@ -124,10 +155,13 @@ This is a simple baseline, not a finalized labeling method. A five-second window
 Raw MATLAB records
         |
         v
-Load and create aligned 625-sample windows       data/load_files.py
+Load, window, identify duplicates, save splits  data/load_files.py
         |
         v
-Validate signals and derive labels from ABP      preprocessing/EDA (to finalize)
+Select train/validation/test windows             iter_split_windows
+        |
+        v
+Clean signals and derive labels from ABP         teammates' preprocessing
         |
         v
 Clean or extract features from PPG               feature engineering (to finalize)
@@ -140,7 +174,6 @@ The loader should focus on reading, alignment, windowing, provenance, and basic 
 
 ## Questions Requiring Team Clarification
 
-- Preserve `part_number` and `record_index` for every generated window so related windows can be grouped during train/validation/test splitting. Randomly splitting neighboring windows from the same source record may leak very similar data across splits and produce overly optimistic results.
 - Confirm whether a source record can be treated as a unique patient. The available files clearly identify records, but patient identity must not be assumed without supporting metadata.
 - Define ABP beat detection, noisy-window rejection, and physiologically plausible SBP/DBP limits.
 - Decide whether labels use whole-window max/min, mean valid beat extrema, or median valid beat extrema.

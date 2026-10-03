@@ -1,0 +1,14 @@
+{
+  "policy_version": "record_disjoint_v1",
+  "seed": 2026,
+  "fractions": [0.7, 0.15, 0.15],
+  "reviewed_record_ids": [
+    "Part_1:record_0", "Part_1:record_1", "Part_1:record_1613",
+    "Part_1:record_2016", "Part_1:record_2555",
+    "Part_1:record_105", "Part_1:record_2055", "Part_1:record_86",
+    "Part_1:record_87", "Part_1:record_88", "Part_1:record_95", "Part_1:record_99",
+    "Part_2:record_536", "Part_3:record_79", "Part_3:record_1103",
+    "Part_4:record_1919", "Part_4:record_2608"
+  ],
+  "reviewed_record_source": "Saved waveform examples and notes in eda/edaplots_rawdata.ipynb; four pilot records in eda/neurokit_feature_starter.ipynb. Identified historical examples are also included. Overall EDA preceded splitting; patient identity and additional shifted overlaps are unknown."
+}

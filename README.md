@@ -2,6 +2,8 @@
 
 See the [project roadmap](ROADMAP.md) for the current implementation assessment, research-informed next steps, proposed October–November phases, and completion criteria. Dataset findings are documented in [data notes](data/DATA_NOTES.md) and the [EDA summary](eda/EDA-readme.md).
 
+For modeling, follow [dataset setup](data/README.md), run `python data/load_files.py`, then consume `data.dataset_splits.iter_split_windows("train")`. The prepared archive includes stable IDs and saved recording-based splits; exact duplicate copies are excluded by this loader. [Data notes](data/DATA_NOTES.md) explain validation/test use and ID preservation through preprocessing.
+
 > 💡 **Note for the team:** This is just a template. Update the above title with your AI Studio Challenge Project name. Remove all guidance notes and example text in this template and populate this README with your own content. You can work on this README throughout AI Studio, and get feedback from your AI Studio Coach and Challenge Advisor before finalizing it.  
 
 ---
