@@ -83,7 +83,7 @@ Coordinate changes to shared files such as `eda/audit.py`. Put repeated calculat
 
 ### DATA-01: Save a source ID for every window
 
-**Implemented:** [data/load_files.py](data/load_files.py) uses [data/dataset_splits.py](data/dataset_splits.py) to stream the build. Existing array-returning loader functions remain available.
+**Implemented:** [data/load_files.py](data/load_files.py) contains both the streaming builder and the split-reading function. Existing array-returning loader functions remain available.
 
 The archive contains `source_record_ids`, `window_ids`, and `split_assignments` aligned with every original signal row. IDs encode part, zero-based record index, and local window index. Window `j` uses `[j * 625, (j + 1) * 625)`; each recording's `first_npz_row` preserves its original offset.
 
@@ -108,7 +108,7 @@ Redundant records receive `excluded`; original signal rows stay in the archive. 
 **Implemented:** `configs/split.json` fixes seed 2026 and approximately 70/15/15 recording proportions, using largest-remainder rounding. Identifiable reviewed records, including the NeuroKit pilot and historical EDA examples, force their canonical records into training; these count toward the training allocation. Window proportions differ.
 
 ```python
-from data.dataset_splits import iter_split_windows
+from data.load_files import iter_split_windows
 
 for batch in iter_split_windows("train", batch_size=1024):
     ppg, abp = batch.ppg, batch.abp

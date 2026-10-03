@@ -37,7 +37,7 @@ jupyter notebook notebooks/read_data.ipynb
 `load_files.py` reads from `data/raw/` and creates `data/processed_dataset.npz` with original signal rows, stable identities, and saved recording-based splits. It streams the build and safely replaces the archive only after verification. Raw files and the archive remain Git-ignored. Existing notebooks still read all original rows; use the split loader for model development:
 
 ```python
-from data.dataset_splits import iter_split_windows
+from data.load_files import iter_split_windows
 
 for batch in iter_split_windows("train"):
     ppg, abp = batch.ppg, batch.abp

@@ -9,9 +9,9 @@ import argparse
 import numpy as np
 
 try:
-    from .dataset_splits import iter_split_windows
+    from .load_files import iter_split_windows
 except ImportError:
-    from dataset_splits import iter_split_windows
+    from load_files import iter_split_windows
 
 
 def main():

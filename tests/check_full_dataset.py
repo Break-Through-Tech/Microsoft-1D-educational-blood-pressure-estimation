@@ -10,7 +10,7 @@ from contextlib import ExitStack
 
 import numpy as np
 
-from data.dataset_splits import (
+from data.load_files import (
     DEFAULT_ARCHIVE, ROOT, WINDOW, _open_array, _read_rows, _reload,
     iter_split_windows, scan_records, validate_assignments,
 )

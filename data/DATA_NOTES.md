@@ -107,7 +107,7 @@ The builder reads one recording at a time and streams NPY entries into a tempora
 From the repository root:
 
 ```python
-from data.dataset_splits import iter_split_windows
+from data.load_files import iter_split_windows
 
 for batch in iter_split_windows("train", batch_size=1024):
     ppg = batch.ppg

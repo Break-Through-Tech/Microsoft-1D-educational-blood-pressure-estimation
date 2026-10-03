@@ -8,7 +8,7 @@ from pathlib import Path
 import h5py
 import numpy as np
 
-from data.dataset_splits import assign_splits, iter_split_windows, prepare_dataset, scan_records, validate_assignments
+from data.load_files import assign_splits, iter_split_windows, prepare_dataset, scan_records, validate_assignments
 from data.load_files import build_datasets, load_mat_records, split_into_windows
 
 

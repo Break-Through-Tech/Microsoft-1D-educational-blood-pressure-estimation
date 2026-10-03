@@ -57,6 +57,6 @@ This file records important loading, preprocessing, EDA, and modeling decisions.
 
 ## Using the prepared data
 
-Run `python data/load_files.py`, then consume `data.dataset_splits.iter_split_windows("train")`. Use the same IDs and keep/exclude mask for signals, labels, and features. Learn scaling and imputation on training data only. Existing notebooks that load all rows directly do not automatically use the saved split.
+Run `python data/load_files.py`, then consume `data.load_files.iter_split_windows("train")`. Use the same IDs and keep/exclude mask for signals, labels, and features. Learn scaling and imputation on training data only. Existing notebooks that load all rows directly do not automatically use the saved split.
 
 Evaluation scope: **Duplicate-aware, record-disjoint evaluation on the UCI release. Patient independence and external-device generalization are not established.**
