@@ -1,22 +1,19 @@
 # CufflessAI: priorities for a trustworthy model result
 
-**Most descriptive EDA is done. The next useful result is a reproducible model comparison on recordings the model has not trained on. Start by saving source IDs, handling known duplicate recordings, making a recording-based split, and exporting clear labels. Then train simple models on that shared dataset.**
+**Recording identities, exact-duplicate exclusion, and recording-based splits are implemented. Next, export labels and PPG features by window ID, then compare models on the saved training/validation sets.**
 
-The repository currently has working signal loading, a full audit, plots, and a small feature starter. It has no saved split, reusable labeled feature dataset, or trained comparison. These are the main gaps. There is no existing test score that this review has proven wrong.
+Updated October 3, 2026 against current code. The loader preserves every original PPG/ABP/ECG row and adds identities and split assignments. Direct full-array notebook reads still include duplicate copies and all splits; use the split loader for modeling. No trained comparison or final test score exists.
 
-The old notebook's 53-row deletion and ineffective `fillna()` step are smaller cleanup items. The deletion removes **53 of 528,828 windows (about 0.01%)** from its in-memory tables only; it does not modify the saved dataset. The `fillna()` code is broken, but the current PPG/ABP data have no missing values to fill. Address them before reusing that notebook for training; they do not need to lead the project plan.
-
-Prepared September 30, 2026 and reassessed against the loader, audit, notebook code/saved outputs, archive headers, EDA notes, and decision log. The earlier full audit reproduced the documented counts; this priority review did not rerun all waveform processing. The supplied research report and readings inform proposed experiments. Record accepted decisions in [DECISIONS.md](DECISIONS.md). Dates, sample sizes, split percentages, and model settings remain proposals. All tasks below are still open.
+The notebooks now use mean detected ABP peaks/valleys through `data/bp_utils.py`. The old zero-handling code was replaced: current code drops aligned rows with more than 10% zeros and replaces remaining zeros with the row's nonzero mean. Neither method has established signal-quality validity. The max/min target and zero-preserving minimal policy below remain proposed baseline comparisons, not descriptions of the current notebook.
 
 ## Do these next
 
-1. **DATA-01: save where each window came from.** Give every five-second window a source-record ID and sample positions. This source history is called **provenance**. Start with a small table mapping the existing archive rows back to recordings; a new waveform storage system is not required.
-2. **DATA-02, then DATA-03: remove known copies and save the split.** Keep one representative of each exact-record duplicate set. Put all windows from one recording in one training, validation, or test set. This is a **record-disjoint split**. It prevents same-record overlap, but does not establish different patients because patient IDs are unavailable.
-3. **LABEL-01: save the answers with the same IDs.** Export the current ABP maximum/minimum labels as `window_extrema_v1`. This gives every model the same clearly defined SBP/DBP answers and prevents accidental row mismatches.
-4. **FEATURE-01 and MODEL-01: build the first comparison.** Turn the PPG starter into reusable extraction code. Train constant mean/median predictors, Ridge, and boosting on the same selected windows. Learn preprocessing from training data only and choose settings using validation.
-5. **EVAL-01: report the final result once choices are fixed.** Use the reserved test recordings. Report SBP/DBP errors, included/excluded counts, and the limits of the split.
+1. Run `python data/load_files.py` to prepare the shared dataset. DATA-01/02/03 are implemented together: identities are saved, exact copies excluded by the split loader, and whole recordings assigned to splits.
+2. LABEL-01: export an explicitly versioned target with window IDs. Current notebook peak/valley means and a named max/min baseline are different targets; do not switch silently.
+3. FEATURE-01 and MODEL-01: consume saved training/validation batches and retain IDs. Compare constants, Ridge, and boosting; learn preprocessing from training only.
+4. EVAL-01: reserve test batches for the frozen final setup. Report errors, coverage, and recording-level limitations.
 
-Run FIX-01 alongside the data work so teammates can install the needed packages. LABEL-01 can run alongside duplicate handling once IDs exist. QC-01 documents the baseline's minimal inclusion rules and failure counts; deeper annotations are needed when adding new cleaning rules or labels. DOC-01 follows each implementation. FIX-02, FIX-03, and LABEL-02 are below these core tasks.
+FIX-01 supports reproducibility. QC-01 still needs a shared inclusion policy. Dataset preparation does not normalize signals, apply zero replacement, reject outliers, or extract features; these remain teammates' work.
 
 ## Choose a task
 
@@ -26,9 +23,9 @@ Every task distinguishes an **observed problem** (confirmed in this repository),
 
 | ID | Priority and current impact | Task | Depends on | Owner / status |
 |---|---|---|---|---|
-| DATA-01 | P0 - missing source mapping | [Save source IDs](#data-01) | None | Unclaimed / open |
-| DATA-02 | P0 - known exact copies remain | [Handle duplicate records](#data-02) | DATA-01 | Unclaimed / open |
-| DATA-03 | P0 - no saved evaluation split | [Split whole recordings](#data-03) | DATA-02 | Unclaimed / open |
+| DATA-01 | P0 | [Save source IDs](#data-01) | None | KR-0000 / implemented |
+| DATA-02 | P0 | [Handle duplicate records](#data-02) | DATA-01 | KR-0000 / implemented |
+| DATA-03 | P0 | [Split whole recordings](#data-03) | DATA-02 | KR-0000 / implemented |
 | LABEL-01 | P0 - no reusable label export | [Save named max/min labels](#label-01) | DATA-01 | Unclaimed / open |
 | FEATURE-01 | P0 - only a tiny feature pilot | [Export PPG-only features](#feature-01) | FIX-01, DATA-01; DATA-03 before selecting features | Unclaimed / open |
 | MODEL-01 | P0 - no model benchmark | [Compare constants and two regressors](#model-01) | DATA-03, LABEL-01, FEATURE-01 | Unclaimed / open |
@@ -36,7 +33,7 @@ Every task distinguishes an **observed problem** (confirmed in this repository),
 | FIX-01 | P1 - reproducibility support | [Document a working environment](#fix-01) | None; run alongside DATA-01 | Unclaimed / open |
 | QC-01 | P1 - shared inclusion policy missing | [Record quality rules and coverage](#qc-01) | DATA-03, LABEL-01; FIX-03 only for zero-run thresholds | Unclaimed / open |
 | DOC-01 | P1 - required project handoff | [Keep instructions and claims accurate](#doc-01) | Start now; finish after EVAL-01 | Unclaimed / open |
-| FIX-02 | P2 - limited notebook-only effect | [Clean up before notebook reuse](#fix-02) | None; required only if reusing these cells for training | Unclaimed / open |
+| FIX-02 | P2 - notebook training integration | [Adopt split access](#fix-02) | DATA-03; only if training from this notebook | Unclaimed / open |
 | FIX-03 | P2 - incomplete optional QC metric | [Extend the zero-run audit](#fix-03) | DATA-01 for final export | Unclaimed / open |
 | LABEL-02 | P2 - alternative target experiment | [Try labels from complete beats](#label-02) | DATA-03, MODEL-01, QC-01 extended annotations | Unclaimed / open |
 
@@ -59,22 +56,22 @@ Every task distinguishes an **observed problem** (confirmed in this repository),
 | Work | Evidence and current result |
 |---|---|
 | Loading and windowing | [data/load_files.py](data/load_files.py) reads the four MAT/HDF5 files into aligned PPG, ABP, and ECG windows. It drops incomplete tails. |
-| Saved signals | `data/processed_dataset.npz` has three float64 arrays of shape `(528828, 625)`. No source IDs, labels, QC flags, or split assignments. |
-| Dataset checks | [eda/audit.py](eda/audit.py) and [eda/EDA-readme.md](eda/EDA-readme.md) report completeness, numeric values, duplicates, and agreement with the archive. Copies are detected but still present. |
+| Saved signals | `data/processed_dataset.npz` has three float64 arrays of shape `(528828, 625)`. Format 2 also saves window/source IDs, split assignments, and the preparation record. No labels or engineered features. |
+| Dataset checks | [eda/audit.py](eda/audit.py) and [eda/EDA-readme.md](eda/EDA-readme.md) report completeness, numeric values, duplicates, and agreement with the archive. Original copies remain in the archive; split access excludes the 14 redundant recordings. |
 | Plots | [eda/edaplots_rawdata.ipynb](eda/edaplots_rawdata.ipynb) includes distributions, unusual examples, source coordinates, zero cases, and an early peak comparison. |
-| Labels and cleaning attempt | [notebooks/read_data.ipynb](notebooks/read_data.ipynb) calculates ABP max/min in memory. It also contains the deletion and imputation problems in FIX-02. |
+| Labels and cleaning attempt | [notebooks/read_data.ipynb](notebooks/read_data.ipynb) uses shared peak/valley means and revised zero handling in memory; suitability remains unresolved. |
 | Feature starter | [eda/neurokit_feature_starter.ipynb](eda/neurokit_feature_starter.ipynb) has six candidate features and QC fields. Saved results cover **10 windows from four records**, using NeuroKit2 0.2.13. |
-| Still missing | A reusable feature export, trained benchmark, saved split, model-selection procedure, and final test results. [requirements.txt](requirements.txt) is effectively empty; [README.md](README.md) is mostly a template. |
+| Still missing | Reusable label/feature exports, a trained benchmark, model-selection procedure, and final test results. [requirements.txt](requirements.txt) is effectively empty; [README.md](README.md) is mostly a template. |
 
-The audit found **12,000 records, 528,828 complete windows, and 14 extra exact-record copies containing 700 windows**. Removing those copies should leave **11,986 records and 528,128 windows**, before other exclusions.
+The audit found **12,000 records, 528,828 complete windows, and 14 extra exact-record copies containing 700 windows**. The split loader excludes those copies, leaving **11,986 records and 528,128 windows**, before other exclusions.
 
 There are **5,407 PPG windows containing zeros**. Of those, 53 contain at least 32 zeros; those zeros need not be consecutive. Our copy has no observed PPG/ABP NaNs or infinities. Dropped tails total **3,172,500 sample positions per channel**, about **0.95%**. Check these local counts when rebuilding data.
 
-During the original review, `.venv\Scripts\python.exe eda/audit.py` ran successfully and confirmed exact PPG/ABP agreement, in order, between source windows and the archive. Notebook code and saved outputs were read, but plotting/NeuroKit notebooks were not rerun: the inspected environment lacked matplotlib, NeuroKit2, and scikit-learn. This roadmap has not changed waveform files or implemented model code.
+During the original review, `.venv\Scripts\python.exe eda/audit.py` ran successfully and confirmed exact PPG/ABP agreement, in order, between source windows and the archive. Notebook code and saved outputs were read, but plotting/NeuroKit notebooks were not rerun: the inspected environment lacked matplotlib, NeuroKit2, and scikit-learn. Those environment findings are historical. Dataset preparation is now implemented; no model result is implied.
 
 ## Rules shared by all tasks
 
-Use `window_id` to join signals, labels, QC, features, and splits. Row numbers can change after filtering. Keep original MAT files and the existing NPZ intact.
+Use `window_id` to join signals, labels, QC, features, and splits. Row numbers can change after filtering. Keep original MAT files intact. The builder replaces the NPZ with added metadata only after checking identical original waveform rows.
 
 Write generated tables to Git-ignored `data/derived/` and compact reports to `reports/`. Commit code, small artificial test datasets, settings, and documentation. Keep waveforms and large feature tables out of Git. Store manifests and checksums in the team's chosen artifact location, and document how to recreate them.
 
@@ -86,80 +83,44 @@ Coordinate changes to shared files such as `eda/audit.py`. Put repeated calculat
 
 ### DATA-01: Save a source ID for every window
 
-**Priority:** P0 - required first
+**Implemented:** [data/load_files.py](data/load_files.py) contains both the streaming builder and the split-reading function. Existing array-returning loader functions remain available.
 
-**Observed problem:** The NPZ saves only PPG, ABP, and ECG arrays. It has no source IDs. The loader reads records in a known order, so the mapping can be reconstructed without changing the waveforms.
+The archive contains `source_record_ids`, `window_ids`, and `split_assignments` aligned with every original signal row. IDs encode part, zero-based record index, and local window index. Window `j` uses `[j * 625, (j + 1) * 625)`; each recording's `first_npz_row` preserves its original offset.
 
-**Future risk:** A later random-window split could put neighboring examples from one recording in both training and testing. No such model result exists in this repository yet.
+Embedded `preparation_json` contains the complete recording map, tail counts, per-channel NaN/infinity counts, hashes, source checksums, package versions, and configuration. Malformed shapes fail with a source-specific message. ECG-only NaNs do not exclude PPG/ABP windows.
 
-**Optional improvement:** A new storage format and detailed memory profiling can wait unless memory use prevents a run. Basic shape/finite guards protect future copies; the current full audit found valid shapes and finite PPG/ABP.
-
-**Files:** [data/load_files.py](data/load_files.py); create `data/build_manifest.py` and reusable record/window iteration functions.
-
-**Steps:**
-
-1. Yield `(part_number, record_index, record)` from a function that reads one record at a time and returns its source information. Keep existing callers working through a wrapper or update all callers together. Sort by part 1–4, then zero-based record index.
-2. Require each record to have shape `(N, 3)` before indexing it. Count NaN and infinity values separately for PPG, ABP, and ECG. For a wrong shape, raise an error naming the part and record. For NaN or infinity, record which signal is affected. Do not discard valid PPG/ABP windows solely because ECG contains NaNs.
-3. Use stable IDs such as `Part_1:record_1055` and `Part_1:record_1055:window_0`. For each complete window store `start_sample = window_index * 625`, `end_sample = start_sample + 625` (exclusive), and `legacy_npz_row_index` counted across **all original records**, including copies.
-4. Write `data/derived/records.csv` and `data/derived/windows.csv` in batches. Include the fields in the shared-table specification below. Save hashes that account for shape and data type, plus source-file checksums (fingerprints used to detect changes). The record table must account for trailing samples even when a record contributes zero complete windows.
-5. Reuse the functions that read one record at a time for later label/feature exports. Do not load the entire NPZ into two pandas DataFrames. If a new waveform cache is needed, write HDF5 in chunks or save arrays in manageable parts; keep the legacy archive intact.
-6. Add small tests with fixed inputs for lengths 624, 625, 626, and 1,250: expected window/tail counts are `(0,624)`, `(1,0)`, `(1,1)`, and `(2,0)`. Include a malformed shape and an ECG-only NaN case.
-
-**Done when:**
-
-the tables describing the original data contain 12,000 records and 528,828 windows, with 3,172,500 trailing samples per channel. Reload the first/last window of each part and 100 IDs chosen with a saved random seed from MAT files; assert exact PPG/ABP equality with the corresponding legacy rows. Run the existing streaming archive check. If memory use blocks an export, measure peak memory and use batched writing; storage redesign is not a completion requirement for the source mapping.
+**Checks:** small boundary/shape/ECG tests, full waveform-byte comparison before replacement, metadata validation, and the existing streaming audit. Full-data results are in [reports/split_summary.md](reports/split_summary.md).
 
 <a id="data-02"></a>
 
-### DATA-02: List duplicates and keep one copy of each recording
+### DATA-02: Keep one copy of each exact recording for modeling
 
-**Priority:** P0 - before saving the split
+**Implemented:** hash shape, dtype, and all three channels, then directly compare matching records' bytes. Keep the lowest `(part_number, record_index)`. The complete duplicate map is embedded, not limited to the audit's ten-example preview.
 
-**Observed problem:** The full audit found 14 extra exact-record copies containing 700 windows, including 13 copies across part files. The audit reports them but does not remove them; its returned example list is truncated to ten pairs.
+Redundant records receive `excluded`; original signal rows stay in the archive. The split loader omits them automatically. Expected exclusion: 14 recordings / 700 windows, leaving 11,986 recordings / 528,128 windows before cleaning.
 
-**Future risk:** Keeping copies can double-weight those signals or let exact copies cross train/test. The number is modest (about 0.13% of windows), but removing known copies is a concrete, low-cost way to close this leakage path.
-
-**Optional improvement:** Searches for shifted or partial overlap beyond known full-record copies are additional work. We have not established how much such overlap exists; do not block the initial baseline on an exhaustive search.
-
-**Files:** [eda/audit.py](eda/audit.py), record manifest from DATA-01; create `data/deduplicate.py`.
-
-**Steps:**
-
-1. Preserve the full `duplicate_records` list in the audit result/export. Keep `duplicate_records[:10]` only as a display preview; do not use that truncated field to build the dataset.
-2. Group candidate duplicates by record shape, dtype, and full three-channel bytes. Compare matching candidates directly before declaring them identical. Keep the record with the lowest `(part_number, record_index)` as the canonical record, the one copy retained from an identical set.
-3. Export `data/derived/duplicates.csv` with canonical ID, redundant ID, matching hash, and redundant window count. Add `canonical_record_id` and `is_canonical` to the record manifest; join those fields onto windows by record ID.
-4. Build the dataset used for analysis by selecting the retained records, without deleting source files or changing legacy row numbering. Report removed records and windows per part.
-5. Optional follow-up: screen exact paired PPG/ABP windows across different canonical records. Reload matches and compare bytes and surrounding sequence positions. Save confirmed overlaps as links and give each connected set of overlapping records one `split_group_id`; single-channel flatness or high correlation alone is not confirmation. Document that shifted excerpts outside this exact-window screen remain possible.
-
-**Done when:**
-
-all 14 known redundant copies, including 13 cross-part copies, are exported; excluding those copies removes 700 windows and leaves 11,986 records / 528,128 windows before other exclusions. Duplicating a record in a small test dataset must select one canonical record and preserve the relationship regardless of the order in which records are read. Any newly confirmed overlap links are kept in one split group by DATA-03.
+**Limit:** shifted/partial overlaps are not exhaustively searched; patient identities are unknown.
 
 <a id="data-03"></a>
 
-### DATA-03: Split by recording and save the assignments
+### DATA-03: Save assignments and provide split access
 
-**Priority:** P0 - before any reported model comparison
+**Implemented:** `configs/split.json` fixes seed 2026 and approximately 70/15/15 recording proportions, using largest-remainder rounding. Identifiable reviewed records, including the NeuroKit pilot and historical EDA examples, force their canonical records into training; these count toward the training allocation. Window proportions differ.
 
-**Observed problem:** There is no saved train/validation/test split. Source IDs and duplicate groups must exist before creating one.
+```python
+from data.load_files import iter_split_windows
 
-**Future risk:** Randomly assigning individual windows would allow related examples across splits. This could overstate performance; there is no existing score here to claim has already been inflated.
+for batch in iter_split_windows("train", batch_size=1024):
+    ppg, abp = batch.ppg, batch.abp
+    window_ids = batch.window_ids
+    # Retain IDs with features and labels; apply one filtering mask to all.
+```
 
-**Optional improvement:** Extra grouped cross-validation folds and split-sensitivity experiments can follow one fixed, checked split. Unknown patient IDs remain a limitation, not a blocker to honest record-level evaluation.
+The reader validates assignments, streams PPG/ABP and IDs, and returns only the requested retained records. Batches have at most the requested size. Missing metadata produces an instruction to rebuild. No cleaning or labels are calculated.
 
-**Files to create:** `data/make_splits.py`, `configs/split.json`, `data/derived/splits.csv`, `reports/split_summary.md`.
+**Handoff:** [data/DATA_NOTES.md](data/DATA_NOTES.md) describes access costs and preprocessing boundaries. `python data/example_split_usage.py --split train --limit 1000` demonstrates access and IDs; `validation` and `test` exercise those sets without calculating model scores.
 
-**Steps:**
-
-1. Read canonical records and `split_group_id`; use canonical record ID as the group when no overlap links exist. Make a table with one row per group. Assign groups to splits; never randomly split individual windows.
-2. List records whose individual waveforms/features were already reviewed, including the four NeuroKit pilot records and plotted EDA examples. Keep those groups in training or validation, document the exception, and allocate the remaining groups with seed 2026 toward overall 70/15/15 train/validation/test proportions. Save exact assignments; report deviations caused by forced development groups and rounding.
-3. Join assignments onto every window by source/group ID. Assert one split per source record, canonical duplicate group, and confirmed-overlap component. Add assertions that no group appears in two different splits.
-4. Export both group/record counts and window counts for each split. Report counts before and after keep/exclude rules. Do not try different seeds to obtain better scores or preferred BP distributions.
-5. Save the split configuration, input-table checksums, and output checksum. Add small test datasets with multiple windows per record and a cross-part duplicate; deliberately split one duplicate across sets and make the assertion fail.
-
-**Done when:**
-
-repeated runs generate the same assignments; all overlap assertions pass; downstream training takes the saved file as input; and test records are excluded from subsequent development plots/review sets. Describe the split as record-disjoint. Patient identity is unknown. State that overall EDA happened before this split was saved.
+**Evaluation:** overall EDA preceded splitting. These are duplicate-aware, record-disjoint splits; patient independence and external-device generalization are not established.
 
 <a id="label-01"></a>
 
@@ -167,7 +128,7 @@ repeated runs generate the same assignments; all overlap assertions pass; downst
 
 **Priority:** P0 - before model training
 
-**Observed problem:** Max/min ABP labels exist as notebook calculations, but no reusable label table or versioned target export is saved. The decision log calls max/min the current baseline.
+**Observed problem:** Current notebooks calculate peak/valley mean labels, but no reusable ID-based target table is saved. A max/min export is a separately named proposed baseline.
 
 **Future risk:** Different notebooks could join the wrong rows or silently use different targets. Unreliable ABP can affect labels, but the current evidence does not establish that every max/min label is bad.
 
@@ -350,29 +311,15 @@ a teammate can follow the README to reproduce a small run and understand how the
 
 <a id="fix-02"></a>
 
-### FIX-02: Clean up the old notebook before training from it
+### FIX-02: Adopt shared split access before notebook-based training
 
-**File:** [notebooks/read_data.ipynb](notebooks/read_data.ipynb). Find cells using `leniency_percent`, `num_entries = 627`, `to_drop_rows`, and `fillna` rather than relying on cell numbers.
+**Priority:** P2 - only if reusing `notebooks/read_data.ipynb` for training.
 
-**Priority:** P2 - required only before reusing these cells for training
+The previous 5% deletion and ineffective `fillna()` code have been replaced. Current code uses a 10% zero threshold, nonzero row means for replacement, and shared peak/valley mean labels. Historical saved outputs do not establish current counts.
 
-**Observed problem:** The saved notebook output reports dropping 53 of 528,828 windows (about 0.01%) from both in-memory tables. There is no dataset export in this path; the saved archive still has all 528,828 windows. The subsequent `fillna()` loop uses chained assignment and a row mean that includes SBP/DBP columns. It does not replace zeros, and the current PPG/ABP data have no missing values to fill. Using 627 rather than 625 gives the same integer cutoff of 31.
+Before training, use saved split access, retain IDs through filtering, and separate waveform inputs from target columns. Document and evaluate zero handling rather than treating zeros as proven missing data. Keep the shared label method or introduce a separately named comparison; do not silently revert it. Clear stale outputs when rerunning the affected notebook.
 
-**Future risk:** The deletion loop drops matching row labels from both tables, so it does not itself misalign PPG and ABP. Afterwards, `.iloc[row]` treats the retained old labels as positions and may address the wrong row. Reusing these cells on new data could make repairs unreliable; using the mixed signal/label table as model input could leak the answers. Neither is evidence of a current trained model failure.
-
-**Optional improvement:** Retire these exploratory cells and call the new ID-based export functions instead. A general imputation system or recovery of the saved dataset is unnecessary for the current data.
-
-**Steps:**
-
-1. Keep waveform arrays at exactly 625 columns. Calculate both target arrays from the unchanged ABP waveform: `sbp = abp.max(axis=1)` and `dbp = abp.min(axis=1)`. Put targets in a separate table; do not append them to either waveform table.
-2. Delete the automatic 5% row-dropping loop from the normal notebook run. Replace it with a QC table containing zero count, negative count, NaN/infinity count, and zero fraction (`zero_count / 625`). Preserve all rows at this stage.
-3. Delete the `ppg_dataset.iloc[row].fillna(..., inplace=True)` loop and the calculation of the mean across that row. The current data have no PPG/ABP NaNs to repair; numeric zeros must remain unchanged until QC-01 establishes a handling rule. Do not convert zeros into NaNs to make imputation run.
-4. Once DATA-01 is merged, attach `window_id` to targets and QC. Apply future approved exclusions using one table of window IDs and keep/exclude decisions, joined to every data table. Do not reuse pre-deletion positions or separately drop rows from `X` and `y`.
-5. Replace the notebook's full-array display with a small preview and summary counts. Clear stale outputs and rerun the changed path after restarting the notebook kernel, using small batches after DATA-01 is available.
-
-**Done when:**
-
-the revised notebook path retains 528,828 windows before removing duplicate copies; signal inputs remain 625 columns; zeros remain unchanged; no chained-assignment warnings occur; and target/QC joins preserve exact window IDs. Changing a target value in a small synthetic example must not change any PPG QC value. Using 625 instead of 627 still gives the old integer cutoff of 31. Explain that the deletion rule lacks evidence; do not claim changing the denominator would restore those 53 rows.
+**Done when:** notebook training consumes saved splits, feature inputs exclude targets, and filtering preserves identities. Dataset preparation does not depend on rewriting this notebook.
 
 <a id="fix-03"></a>
 
@@ -428,7 +375,7 @@ manually marked examples and artificial boundary tests have recorded outcomes, e
 
 ## Shared tables to build
 
-DATA-01 and the later exports use these fields. A separate source table can make the existing NPZ usable without rewriting it, once source-to-row matching passes the checks.
+The archive embeds the recording map and per-window IDs/splits. The following are conceptual fields for later exports; separate record/window CSVs are optional.
 
 | Table | Fields to keep |
 |---|---|
@@ -445,7 +392,7 @@ DATA-01 and the later exports use these fields. A separate source table can make
 
 **Keep label versions separate.** Use `window_extrema_v1` first. Test `complete_beat_median_v1`, with beat means as a comparison. Never fill a missing median label with max/min under the same name. The current unpaired peak experiment found median differences of **+2.35 mmHg for SBP and -1.76 mmHg for DBP**. Label choice matters, but these differences do not establish detector accuracy. Run the beat experiment after the first baseline, if time allows. If it remains inconclusive, keep max/min as the main target and report the experiment separately.
 
-**Reserve test records before further tuning.** Overall EDA has already happened; disclose that. Keep individually reviewed examples in training/validation where practical and document the assignments. The proposed 70/15/15 split and seed 2026 apply to recording groups. Window percentages will differ because recordings have different lengths. Any extra validation folds must also keep groups together. [GroupShuffleSplit](https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.GroupShuffleSplit.html) is one implementation option.
+**Keep the saved test assignments reserved.** Overall EDA has already happened; disclose that. The implemented 70/15/15 split and seed 2026 apply to canonical recordings. Identified reviewed examples are assigned to training. Window percentages differ because recordings have different lengths. Any extra validation folds must also keep recordings together.
 
 **Support quality rules with evidence.** The meaning of exact PPG zeros is unknown. Do not automatically delete or interpolate them. Compare PPG shape, local variation, abrupt changes, flat sections, and peak counts with the separate ABP reference. Unusual real pressure is not automatically a bad label. Report how each removal rule changes counts and pressure ranges, including counts by recording length. The proposed review size and two-beat minimum are practical starting points, not published standards. Include different beat rates and detector failures in review; expand the sample when a failure category remains unresolved.
 
@@ -483,7 +430,7 @@ These dates follow the overview's October modeling and November presentation mil
 
 | Phase | Proposed dates | Output and completion check |
 |---|---|---|
-| 1. IDs, duplicates, and splits | Oct 1-7 | DATA-01/02/03: source mapping is saved; no recording or linked-copy group crosses splits. |
+| 1. IDs, duplicates, and splits | Implemented Oct 3 | DATA-01/02/03: IDs and assignments saved; split access excludes exact copies. No exhaustive overlap screen is claimed. |
 | 2. Setup, labels, and features in parallel | Oct 1-10 | FIX-01, LABEL-01, FEATURE-01: install commands work; labels/features join by ID. |
 | 3. First model comparison | Oct 8-21 | MODEL-01 and core QC-01: constants and two regressors use the same eligible windows and training-only preprocessing. |
 | 4. Select and freeze the setup | Oct 19-30 | Select using validation. Add optional QC/label/feature experiments only if useful and feasible; freeze the final procedure. |

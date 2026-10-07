@@ -54,4 +54,6 @@ Existing processed data file
 
 ## Before modeling
 
-Decide how to flag poor PPG/ABP windows and derive ABP labels. Add source-record identity when preparing split-ready data so repeated recordings and nearby windows can remain together. Keep these choices explicit in the data preparation step; this audit only describes the current data.
+Run `python data/load_files.py` to prepare archive format 2, then use `data.load_files.iter_split_windows` for train/validation/test inputs. Original signal rows remain intact; identities and split assignments are added, and the split loader excludes exact copies. See [data notes](../data/DATA_NOTES.md) and [split verification](../reports/split_summary.md).
+
+The audit results above describe original waveforms and its own exploratory label comparison. Current notebooks use shared peak/valley mean labels; these are different from both the audit's whole-window extrema and its beat-median comparison. Signal-quality rules and reusable ID-based label/feature exports still need work. This audit does not apply the saved split or train a model.
