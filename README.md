@@ -17,8 +17,9 @@ For modeling, follow [dataset setup](data/README.md), run `python data/load_file
 | Katherine Wu     | @wukatherine  | EDA, Data visualization                 |
 | Joanna Liu      | @lte24       | Missing values  |
 | Sarah To       | @aizhenii    | Outliers           |
-| Kien Nguyen       | @tkien17    |   placeholder         |
-| Harshitha Venkateswaran       | @ (add username)    |       placeholder     |
+| Kien Nguyen       | @tkien17    |   EDA         |
+| Harshitha Venkateswaran       | @harshithavenkateswaran-code    |       placeholder     |
+| Tanzina Sumona       | @TanzinaS    |       placeholder     |
 
 ---
 
