@@ -57,12 +57,41 @@ For modeling, follow [dataset setup](data/README.md), run `python data/load_file
 
 ## 📊 **Data Exploration**
 
-**You might consider describing the following (as applicable):**
+### Dataset(s) used
 
-* The dataset(s) used: origin, format, size, type of data
-* Data exploration and preprocessing approaches
-* Insights from your Exploratory Data Analysis (EDA)
-* Challenges and assumptions when working with the dataset(s)
+The project uses the **UCI Cuff-Less Blood Pressure Estimation dataset**, distributed as four MATLAB files: `Part_1.mat` through `Part_4.mat`. Although the project calls these files “raw,” UCI describes the source dataset as preprocessed.
+- **Format:** MATLAB v7.3 files, read as HDF5 using `h5py`. The project also creates a local processed archive, `processed_dataset.npz`.
+- **Size:** 12,000 records, each containing synchronized signals with variable lengths of 1,000–74,000 samples. The three channels are sampled at **125 Hz**:
+  - **PPG:** optical pulse waveform; intended model input.
+  - **ABP:** arterial blood-pressure waveform in mmHg; source of reference SBP/DBP labels.
+  - **ECG:** electrocardiogram; retained for possible future work, but outside the initial model scope.
+- **Processed dataset:** 528,828 complete, non-overlapping five-second windows, each 625 samples long, with aligned PPG, ABP, and ECG arrays. That is 330,517,500 retained samples per channel, or about 734.5 hours of signal.
+
+## Data exploration and preprocessing
+
+The data was inspected record by record to check record shapes, channel alignment, sample lengths, and invalid values. The loader reads the three synchronized channels, divides each record into complete 625-sample windows, and drops any remaining samples shorter than a full window rather than padding them. It saves the aligned windows to `processed_dataset.npz`.
+
+For the current baseline, SBP and DBP are derived from the **maximum and minimum ABP sample in each five-second window**, respectively. ECG remains in the processed archive, but the initial modeling task uses PPG to predict the ABP-derived labels.
+
+The EDA also checked PPG/ABP numeric validity, counted numeric zeros in PPG, searched for exact repeated recordings, and compared whole-window ABP extrema with exploratory beat-level extrema. 
+
+## EDA insights
+
+- All 12,000 records had the expected three-channel structure, and channels were aligned.
+- Record lengths varied substantially. Windowing produced **528,828 complete windows**; 10,082 records had a short trailing segment discarded. In total, 3,172,500 sample positions per channel were dropped—about 7.05 hours across the dataset.
+- PPG and ABP had no observed NaN or infinite samples. ECG had 16 NaN values in one record.
+- **5,407 PPG windows (1.02%)** contained at least one numeric zero. The EDA did not establish whether these zeros indicate artifacts or valid signal values.
+- The audit identified **14 exact duplicate recordings**, including 13 matches across different part files. The later duplicate copies account for 700 windows. This creates a risk of train/test leakage if matching records or neighboring windows are split independently.
+- The median of the baseline whole-window labels was **131.10 mmHg for SBP** and **62.03 mmHg for DBP**. In a sample of 20,263 windows, whole-window maxima were a median 2.35 mmHg above detected beat-peak medians, while minima were 1.76 mmHg below detected beat-trough medians. These comparisons are exploratory, not clinical validation.
+- The processed PPG and ABP arrays matched windows reconstructed from the source files exactly and in order. This verifies loading consistency, not signal quality.
+
+## Challenges and assumptions
+
+- **Label quality:** A single maximum and minimum can be affected by noise or artifacts. Beat-based peak/valley detection and aggregation may produce more robust labels, but the method and quality criteria are not finalized.
+- **Leakage and provenance:** Source-record IDs should be preserved so duplicates and related windows can be kept together across data splits. The files do not provide verified patient-level identity, so a record should not be assumed to equal a unique patient.
+- **Signal quality:** Numeric zeros were observed, but their cause is unknown. Rules for noisy-window rejection and physiologically plausible values still need to be established. Feature engineering to address this is in progress.
+- **Model preparation:** PPG normalization and the choice between raw windows, engineered features, or both remain open.
+- **Scope:** PPG is treated as the model input and synchronized ABP as the training reference. PPG amplitude is not itself a blood-pressure measurement, and the current whole-window ABP labels are a baseline rather than finalized ground truth.
 
 **Potential visualizations to include:**
 
