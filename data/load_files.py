@@ -382,8 +382,15 @@ def build_datasets(data_dir=RAW_DATA_DIR, mat_files=MAT_FILES, window_size=WINDO
 
 
 def save_datasets(ppg_dataset, abp_dataset, ecg_dataset, output_path=OUTPUT_PATH):
-    """Save the PPG, ABP, and ECG datasets to a single compressed .npz file."""
-    np.savez_compressed(output_path, ppg=ppg_dataset, abp=abp_dataset, ecg=ecg_dataset)
+    """Save a new legacy signals-only file; never overwrite prepared datasets."""
+    output_path = Path(output_path)
+    if not str(output_path).endswith(".npz"):
+        output_path = Path(str(output_path) + ".npz")
+    if output_path.resolve() == OUTPUT_PATH.resolve():
+        raise ValueError("Use prepare_dataset() or python data/load_files.py to write processed_dataset.npz with IDs and splits.")
+    # Exclusive creation also prevents overwrites if another writer creates the file.
+    with output_path.open("xb") as destination:
+        np.savez_compressed(destination, ppg=ppg_dataset, abp=abp_dataset, ecg=ecg_dataset)
 
 
 def main():

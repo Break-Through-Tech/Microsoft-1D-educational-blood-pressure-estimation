@@ -26,7 +26,7 @@ Every task distinguishes an **observed problem** (confirmed in this repository),
 | DATA-01 | P0 | [Save source IDs](#data-01) | None | KR-0000 / implemented |
 | DATA-02 | P0 | [Handle duplicate records](#data-02) | DATA-01 | KR-0000 / implemented |
 | DATA-03 | P0 | [Split whole recordings](#data-03) | DATA-02 | KR-0000 / implemented |
-| LABEL-01 | P0 - no reusable label export | [Save named max/min labels](#label-01) | DATA-01 | Unclaimed / open |
+| LABEL-01 | P0 - no reusable label export | [Export versioned pressure labels](#label-01) | DATA-01 | Unclaimed / open |
 | FEATURE-01 | P0 - only a tiny feature pilot | [Export PPG-only features](#feature-01) | FIX-01, DATA-01; DATA-03 before selecting features | Unclaimed / open |
 | MODEL-01 | P0 - no model benchmark | [Compare constants and two regressors](#model-01) | DATA-03, LABEL-01, FEATURE-01 | Unclaimed / open |
 | EVAL-01 | P1 - needed for final results | [Run the final test](#eval-01) | MODEL-01; QC-01 minimal policy before final freeze | Unclaimed / open |
@@ -37,7 +37,7 @@ Every task distinguishes an **observed problem** (confirmed in this repository),
 | FIX-03 | P2 - incomplete optional QC metric | [Extend the zero-run audit](#fix-03) | DATA-01 for final export | Unclaimed / open |
 | LABEL-02 | P2 - alternative target experiment | [Try labels from complete beats](#label-02) | DATA-03, MODEL-01, QC-01 extended annotations | Unclaimed / open |
 
-**Changed dependencies:** MODEL-01 uses fresh label/feature exports and does not depend on fixing the old exploratory notebook. If the team chooses to reuse that notebook, finish FIX-02 first. The first baseline keeps numeric zeros and uses a documented minimal policy; it does not require a global zero-run audit or a new beat detector. **Beat-based labels** measure each complete heartbeat and summarize those measurements into one pressure pair per window; this is an optional alternative to the first max/min target.
+**Changed dependencies:** MODEL-01 uses fresh label/feature exports and does not depend on fixing the old exploratory notebook. If the team chooses to reuse that notebook, finish FIX-02 first. The first baseline keeps numeric zeros and uses a documented minimal policy; it does not require a global zero-run audit or a new beat detector. **Beat-based labels** measure each complete heartbeat and summarize those measurements into one pressure pair per window; this is an optional alternative to the selected baseline target.
 
 ## Terms used in the tasks
 
@@ -124,7 +124,7 @@ The reader validates assignments, streams PPG/ABP and IDs, and returns only the 
 
 <a id="label-01"></a>
 
-### LABEL-01: Save the current blood-pressure answers in a table
+### LABEL-01: Export versioned blood-pressure answers in a table
 
 **Priority:** P0 - before model training
 
@@ -132,20 +132,20 @@ The reader validates assignments, streams PPG/ABP and IDs, and returns only the 
 
 **Future risk:** Different notebooks could join the wrong rows or silently use different targets. Unreliable ABP can affect labels, but the current evidence does not establish that every max/min label is bad.
 
-**Optional improvement:** Complete-beat median/mean labels are an alternative experiment in LABEL-02. A validated new detector is not required to train a clearly named max/min baseline.
+**Optional improvement:** Complete-beat median/mean labels are an alternative experiment in LABEL-02. A new detector is not required to export the current method or a separately named max/min comparison.
 
-**Files to create:** `data/derive_labels.py`, `data/derived/labels_window_extrema_v1.csv`.
+**Files to create:** `data/derive_labels.py`; generated label tables under `data/derived/`.
 
 **Steps:**
 
-1. Read ABP through the DATA-01 iterator and compute maxima/minima over only the 625 waveform samples. Keep pressure units unchanged. Do not derive labels from cleaned/normalized PPG or a DataFrame containing label columns.
-2. Export `window_id`, `label_version=window_extrema_v1`, `sbp`, `dbp`, `abp_finite`, `label_valid`, and `failure_reason`. Do not silently use `nanmax`/`nanmin` to hide missing ABP; mark labels invalid if ABP contains NaN or infinity.
-3. Keep one row for every original window. Join duplicate and keep/exclude tables by ID to select model data. Max/min labels describe the highest and lowest samples; they do not prove the pressure signal is reliable.
-4. For a known synthetic ABP window, assert the two target values equal its exact maximum/minimum. Reload 100 source windows chosen with a saved random seed and compare their exported targets to direct array reductions.
+1. Read aligned ABP and window IDs through `iter_split_windows`. Export the current `data/bp_utils.py` peak/valley means under an explicit method name, such as `peak_valley_mean_v1`. Coordinate with the owner of that shared implementation; do not change its detector as part of exporting results.
+2. Save `window_id`, split, label version, SBP, DBP, detected peak/valley counts, validity, and failure reason. Require finite ABP and finite targets; missing detections remain invalid rather than receiving a different method's answer.
+3. Export one row for every requested retained window, including failures. Use training/validation exports for development; generate reserved test labels only when needed for frozen evaluation. Keep pressure units unchanged and join features by window ID.
+4. If the team chooses a whole-window max/min comparison, export it separately as `window_extrema_v1`. Never substitute it for peak/valley means under the same method name. Verify each method against its direct calculation on artificial windows and a reproducible development subset.
 
 **Done when:**
 
-the current copy produces 528,828 SBP/DBP pairs with window IDs and no NaN/infinity before exclusions, labels reproduce exactly on rerun, and no target column is included in the list of model inputs. This task does not depend on completing LABEL-02.
+one command reproduces ID-based label tables, failures are explicit, and training selects exactly one documented target version. The split loader supplies 528,128 retained windows across all three sets; the 700 duplicate-copy windows are excluded. New beat detection remains LABEL-02, not a prerequisite for this export.
 
 <a id="feature-01"></a>
 
@@ -189,7 +189,7 @@ features regenerate by ID, failure counts are explicit, making a prediction need
 
 **Steps:**
 
-1. Join split assignments, duplicate status, max/min labels, features, and keep/exclude decisions by `window_id` and assert that each ID has at most one matching row in each table. Stop with an error if an ID is duplicated or has no expected matching row. Save the list of allowed features and the exact window IDs included in the run.
+1. Join split assignments, duplicate status, versioned labels, features, and keep/exclude decisions by `window_id` and assert that each ID has at most one matching row in each table. Stop with an error if an ID is duplicated or has no expected matching row. Save the list of allowed features and the exact window IDs included in the run.
 2. Use the same selected windows for every model. Require labels without NaN/infinity and apply the documented PPG-processing rules. Report excluded failures. Learn missing-feature replacement values and scaling values from training rows only. Apply the same values to validation and test rows.
 3. Fit constant training mean and training median predictors per target. Fit Ridge with a small predefined set of alpha values (for example 0.1, 1, 10, 100). Fit one histogram-gradient-boosting regressor per target with a small saved set of parameter combinations; disable automatic early stopping that creates its own random window split.
 4. Choose model settings using validation MAE, report RMSE as well, and save per-window validation predictions for all four predictors on the same IDs. Keep the test set out of the script's default evaluation path.
@@ -197,7 +197,7 @@ features regenerate by ID, failure counts are explicit, making a prediction need
 
 **Done when:**
 
-both regressors and both constants have reproducible validation results on the same selected windows. Include results even if the constants win. Use fresh ID-based exports; fixing the old notebook is required only if its cells are reused. This task proceeds with max/min labels and a documented minimal inclusion policy while LABEL-02 is still an experiment.
+both regressors and both constants have reproducible validation results on the same selected windows. Include results even if the constants win. Use fresh ID-based exports; fixing the old notebook is required only if its cells are reused. This task uses one explicitly selected label version and a documented inclusion policy while LABEL-02 is still an experiment. The current peak/valley method and an optional max/min comparison must be reported separately.
 
 <a id="eval-01"></a>
 
@@ -261,7 +261,7 @@ a second fresh environment installs from the file, `pip check` passes, the audit
 
 **Future risk:** New deletion thresholds could remove real but uncommon pressure values. Unreliable reference signals could affect labels. The proportion of affected model examples is not established yet.
 
-**Optional improvement:** The 200-window annotation study is for developing new exclusion thresholds or beat labels. It is not a prerequisite for the initial max/min baseline with a documented minimal policy.
+**Optional improvement:** The 200-window annotation study is for developing new exclusion thresholds or beat labels. It is not a prerequisite for the initial versioned-label baseline with a documented inclusion policy.
 
 **Files to create:** `eda/review_windows.ipynb`, `data/derived/review_windows.csv`, `data/derived/review_annotations.csv`, `reports/qc_policy.md`.
 
@@ -390,7 +390,7 @@ The archive embeds the recording map and per-window IDs/splits. The following ar
 
 **Keep the current window size and task.** Predict SBP/DBP for the same five-second interval as the PPG input. This is not future-pressure forecasting. Keep dropping only incomplete tails; do not add padding. Recovering tails is lower priority than exporting labels and preventing related signals from appearing on both sides of an evaluation.
 
-**Keep label versions separate.** Use `window_extrema_v1` first. Test `complete_beat_median_v1`, with beat means as a comparison. Never fill a missing median label with max/min under the same name. The current unpaired peak experiment found median differences of **+2.35 mmHg for SBP and -1.76 mmHg for DBP**. Label choice matters, but these differences do not establish detector accuracy. Run the beat experiment after the first baseline, if time allows. If it remains inconclusive, keep max/min as the main target and report the experiment separately.
+**Keep label versions separate.** Export the current method as `peak_valley_mean_v1`; choose and record the model target version explicitly. `window_extrema_v1` is an optional separate comparison. Test `complete_beat_median_v1`, with beat means as a comparison. Never fill a missing median label with max/min under the same name. The current unpaired peak experiment found median differences of **+2.35 mmHg for SBP and -1.76 mmHg for DBP**. Label choice matters, but these differences do not establish detector accuracy. Run the beat experiment after the first baseline, if time allows. If it remains inconclusive, retain the selected baseline target and report the experiment separately.
 
 **Keep the saved test assignments reserved.** Overall EDA has already happened; disclose that. The implemented 70/15/15 split and seed 2026 apply to canonical recordings. Identified reviewed examples are assigned to training. Window percentages differ because recordings have different lengths. Any extra validation folds must also keep recordings together.
 
@@ -437,7 +437,7 @@ These dates follow the overview's October modeling and November presentation mil
 | 5. Final evaluation | Nov 1-13 | EVAL-01: reproducible reserved-test metrics, coverage counts, limitations, and error analysis; any uncertainty estimates respect recordings. |
 | 6. Handoff | Nov 14-30 | DOC-01: a fresh environment reproduces the comparison and PPG-only prediction; report and presentation are ready. |
 
-**If time is short:** finish source IDs, known-duplicate handling, the saved recording split, max/min label export, basic features, and two regressors plus constants. Document the environment, minimal inclusion policy, exclusion counts, and final results. Fix the old notebook only if reusing it for training. Extended annotations, new beat labels, storage redesign, and extra comparisons can wait.
+**If time is short:** finish source IDs, known-duplicate handling, the saved recording split, versioned label export, basic features, and two regressors plus constants. Document the environment, minimal inclusion policy, exclusion counts, and final results. Fix the old notebook only if reusing it for training. Extended annotations, new beat labels, storage redesign, and extra comparisons can wait.
 
 **Optional later work:** CNNs, exhaustive searches for similar excerpts, extra datasets, classification, phone/webcam capture, deployment, and dashboards. A replay demo can show reserved prerecorded PPG, reference labels, predictions, quality status, and model comparisons. Phone/webcam signals come from a different acquisition setup and need separate evaluation. Prediction intervals also need their own validation; the spread of past errors is not automatically a confidence guarantee for one new prediction.
 
