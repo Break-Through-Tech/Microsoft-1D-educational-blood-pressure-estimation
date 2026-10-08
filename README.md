@@ -52,14 +52,19 @@ For modeling, follow [dataset setup](data/README.md), run `python data/load_file
 
 - Follow [dataset setup](data/README.md) to download the UCI data. Place `Part_1.mat` through `Part_4.mat` in `data/raw/`, keeping their original names. Data files are not included in the repository.
 
-- From the repository root, prepare your local dataset and try reading a training batch:
+- From the repository root, prepare your local dataset:
 
   ```powershell
   python data/load_files.py
-  python data/example_split_usage.py --split train --limit 1000
   ```
 
-  The first command creates `data/processed_dataset.npz` with aligned signals, window IDs, and saved train/validation/test assignments. For model inputs, use `iter_split_windows` from `data.load_files`; see [data notes](data/DATA_NOTES.md) for examples.
+  This command creates `data/processed_dataset.npz` with aligned signals, window IDs, and saved train/validation/test assignments. For model inputs, use `iter_split_windows` from `data.load_files`; see [data notes](data/DATA_NOTES.md) for examples.
+
+- **Optional example (not required for setup):** after preparing the dataset, run the following to read up to 1,000 training windows and demonstrate keeping signals and IDs aligned through filtering. It does not train a model or modify the dataset.
+
+  ```powershell
+  python data/example_split_usage.py --split train --limit 1000
+  ```
 
 - To open the existing preprocessing notebook, run `jupyter notebook notebooks/read_data.ipynb`.
 - **NeuroKit2 setup:** TODO — add the teammate-confirmed package version, dependencies, and feature-extraction command.
