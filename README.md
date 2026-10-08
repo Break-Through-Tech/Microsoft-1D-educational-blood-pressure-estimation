@@ -121,10 +121,8 @@ The EDA also checked PPG/ABP numeric validity, counted numeric zeros in PPG, sea
 
 ### Visualizations 
 <img width="1690" height="590" alt="download" src="https://github.com/user-attachments/assets/29f91ac4-71cd-4de4-8811-c07ae430a25b" />
-SBP nearest global median: SBP=121.5, DBP=67.0 mmHg; PPG range=2; Part_1.mat record 0, window 0
-Highest global SBP: SBP=nan, DBP=nan mmHg; PPG range=0.5288; Part_1.mat record 1613, window 0
-Lowest global DBP: SBP=nan, DBP=nan mmHg; PPG range=0.5288; Part_1.mat record 1613, window 0
-Smallest global PPG range: SBP=129.0, DBP=99.3 mmHg; PPG range=0.09775; Part_4.mat record 2608, window 2
+Plots showing SBP nearest global median, Highest global SBP, Lowest global DBP, Smallest global PPG range
+
 
 <img width="1640" height="590" alt="download (1)" src="https://github.com/user-attachments/assets/3f6c2698-b482-4af2-8857-4b9ec8dfd40f" />
 View of what zero-value runs look like in the data
