@@ -67,7 +67,7 @@ The project uses the **UCI Cuff-Less Blood Pressure Estimation dataset**, distri
   - **ECG:** electrocardiogram; retained for possible future work, but outside the initial model scope.
 - **Processed dataset:** 528,828 complete, non-overlapping five-second windows, each 625 samples long, with aligned PPG, ABP, and ECG arrays. That is 330,517,500 retained samples per channel, or about 734.5 hours of signal.
 
-## Data exploration and preprocessing
+### Data exploration and preprocessing
 
 The data was inspected record by record to check record shapes, channel alignment, sample lengths, and invalid values. The loader reads the three synchronized channels, divides each record into complete 625-sample windows, and drops any remaining samples shorter than a full window rather than padding them. It saves the aligned windows to `processed_dataset.npz`.
 
@@ -75,7 +75,7 @@ For the current baseline, SBP and DBP are derived from the **maximum and minimum
 
 The EDA also checked PPG/ABP numeric validity, counted numeric zeros in PPG, searched for exact repeated recordings, and compared whole-window ABP extrema with exploratory beat-level extrema. 
 
-## EDA insights
+### EDA insights
 
 - All 12,000 records had the expected three-channel structure, and channels were aligned.
 - Record lengths varied substantially. Windowing produced **528,828 complete windows**; 10,082 records had a short trailing segment discarded. In total, 3,172,500 sample positions per channel were dropped—about 7.05 hours across the dataset.
@@ -85,7 +85,7 @@ The EDA also checked PPG/ABP numeric validity, counted numeric zeros in PPG, sea
 - The median of the baseline whole-window labels was **131.10 mmHg for SBP** and **62.03 mmHg for DBP**. In a sample of 20,263 windows, whole-window maxima were a median 2.35 mmHg above detected beat-peak medians, while minima were 1.76 mmHg below detected beat-trough medians. These comparisons are exploratory, not clinical validation.
 - The processed PPG and ABP arrays matched windows reconstructed from the source files exactly and in order. This verifies loading consistency, not signal quality.
 
-## Challenges and assumptions
+### Challenges and assumptions
 
 - **Label quality:** A single maximum and minimum can be affected by noise or artifacts. Beat-based peak/valley detection and aggregation may produce more robust labels, but the method and quality criteria are not finalized.
 - **Leakage and provenance:** Source-record IDs should be preserved so duplicates and related windows can be kept together across data splits. The files do not provide verified patient-level identity, so a record should not be assumed to equal a unique patient.
