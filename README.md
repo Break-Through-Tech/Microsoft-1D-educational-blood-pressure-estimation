@@ -35,13 +35,34 @@ For modeling, follow [dataset setup](data/README.md), run `python data/load_file
 
 ## 👩🏽‍💻 **Setup and Installation**
 
-**Provide step-by-step instructions so someone else can run your code and reproduce your results. Depending on your setup, include:**
+- Clone the repository and enter its folder:
 
-* How to clone the repository
-* How to install dependencies
-* How to set up the environment
-* How to access the dataset(s)
-* How to run the notebook or scripts
+  ```powershell
+  git clone https://github.com/Break-Through-Tech/Microsoft-1D-educational-blood-pressure-estimation.git
+  cd Microsoft-1D-educational-blood-pressure-estimation
+  ```
+
+- Create and activate a Python environment, then install the data-processing dependencies. These commands use Windows PowerShell:
+
+  ```powershell
+  python -m venv .venv
+  .\.venv\Scripts\Activate.ps1
+  python -m pip install h5py numpy pandas scipy jupyter
+  ```
+
+- Follow [dataset setup](data/README.md) to download the UCI data. Place `Part_1.mat` through `Part_4.mat` in `data/raw/`, keeping their original names. Data files are not included in the repository.
+
+- From the repository root, prepare your local dataset and try reading a training batch:
+
+  ```powershell
+  python data/load_files.py
+  python data/example_split_usage.py --split train --limit 1000
+  ```
+
+  The first command creates `data/processed_dataset.npz` with aligned signals, window IDs, and saved train/validation/test assignments. For model inputs, use `iter_split_windows` from `data.load_files`; see [data notes](data/DATA_NOTES.md) for examples.
+
+- To open the existing preprocessing notebook, run `jupyter notebook notebooks/read_data.ipynb`.
+- **NeuroKit2 setup:** TODO — add the teammate-confirmed package version, dependencies, and feature-extraction command.
 
 ---
 
