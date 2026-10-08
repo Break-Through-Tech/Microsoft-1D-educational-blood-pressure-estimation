@@ -93,7 +93,7 @@ The EDA also checked PPG/ABP numeric validity, counted numeric zeros in PPG, sea
 - **Model preparation:** PPG normalization and the choice between raw windows, engineered features, or both remain open.
 - **Scope:** PPG is treated as the model input and synchronized ABP as the training reference. PPG amplitude is not itself a blood-pressure measurement, and the current whole-window ABP labels are a baseline rather than finalized ground truth.
 
-**Potential visualizations to include:**
+### Visualizations 
 
 * Plots, charts, heatmaps, feature visualizations, sample dataset images
 
