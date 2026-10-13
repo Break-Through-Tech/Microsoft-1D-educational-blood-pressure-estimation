@@ -9,7 +9,7 @@ import h5py
 import numpy as np
 
 from data.load_files import assign_splits, iter_split_windows, prepare_dataset, scan_records, validate_assignments
-from data.load_files import build_datasets, load_mat_records, split_into_windows
+from data.load_files import OUTPUT_PATH, build_datasets, load_mat_records, save_datasets, split_into_windows
 
 
 def mat_file(path, records):
@@ -89,6 +89,23 @@ class DatasetTests(unittest.TestCase):
         for split, size in (("invalid", 1), ("train", 0), ("train", True)):
             with self.assertRaises(ValueError):
                 list(iter_split_windows(split, size, self.archive))
+
+    def test_legacy_save_cannot_overwrite_prepared_archive(self):
+        self.prepare()
+        original = self.archive.read_bytes()
+        signals = np.zeros((1, 625))
+        for path in (self.archive, self.archive.with_suffix("")):
+            with self.assertRaises(FileExistsError):
+                save_datasets(signals, signals, signals, path)
+            self.assertEqual(self.archive.read_bytes(), original)
+        for path in (OUTPUT_PATH, OUTPUT_PATH.with_suffix("")):
+            with self.assertRaisesRegex(ValueError, "prepare_dataset"):
+                save_datasets(signals, signals, signals, path)
+        legacy_path = self.root / "legacy"
+        save_datasets(signals, signals, signals, legacy_path)
+        with np.load(legacy_path.with_suffix(".npz")) as archive:
+            self.assertEqual(set(archive.files), {"ppg", "abp", "ecg"})
+            np.testing.assert_equal(archive["ppg"], signals)
 
     def test_malformed_and_missing_reviewed_record(self):
         mat_file(self.root / self.files[0], [np.zeros((625, 2))])
