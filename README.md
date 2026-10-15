@@ -19,7 +19,7 @@ For modeling, follow [dataset setup](data/README.md), run `python data/load_file
 | Sarah To       | @aizhenii    | Outliers           |
 | Kien Nguyen       | @tkien17    |   EDA         |
 | Harshitha Venkateswaran       | @harshithavenkateswaran-code    |       feature engineering     |
-| Tanzina Sumona       | @TanzinaS    |       placeholder     |
+| Tanzina Sumona       | @TanzinaS    |       developing 1D CNN model using raw PPG data     |
 
 ---
 
