@@ -2,6 +2,10 @@
 data/raw/*
 !data/raw/.gitkeep
 data/processed_dataset.npz
+data/cleaned_dataset.npz
+data/feature_eng_dataset.npz
+/data/*.npz
+/data/**/*.npz
 data/derived/
 data/dataset-build-*/
 data/dataset-build-*.npz
