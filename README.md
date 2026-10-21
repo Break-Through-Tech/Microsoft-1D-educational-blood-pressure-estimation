@@ -18,8 +18,8 @@ For modeling, follow [dataset setup](data/README.md), run `python data/load_file
 | Joanna Liu      | @lte24       | Missing values  |
 | Sarah To       | @aizhenii    | Outliers           |
 | Kien Nguyen       | @tkien17    |   EDA         |
-| Harshitha Venkateswaran       | @harshithavenkateswaran-code    |       placeholder     |
-| Tanzina Sumona       | @TanzinaS    |       placeholder     |
+| Harshitha Venkateswaran       | @harshithavenkateswaran-code    |       feature engineering     |
+| Tanzina Sumona       | @TanzinaS    |       developing 1D CNN model using raw PPG data     |
 
 ---
 
