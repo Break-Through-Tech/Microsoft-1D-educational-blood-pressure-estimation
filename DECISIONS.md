@@ -21,10 +21,10 @@ This file records important loading, preprocessing, EDA, and modeling decisions.
 |---|---|---|
 | Accepted | Treat PPG as the primary model input and ABP as the source of reference SBP/DBP labels. | PPG amplitude is not pressure in mmHg; ABP is the synchronized pressure waveform. |
 | Accepted | Retain ECG in the processed archive, but exclude it from the initial project scope. | The challenge overview says ECG is not required for the initial model. |
-| Implemented, not validated | The notebooks use mean detected ABP peaks for SBP and mean detected valleys for DBP. | Shared `data/bp_utils.py` uses `scipy.signal.find_peaks` without beat pairing or quality rules; a missing peak/valley produces NaN. |
+| Implemented, not validated | The notebooks label SBP/DBP as the median over complete beats: prominent systolic peaks (at least 0.33 s apart) and the lowest ABP between consecutive peaks. | Replaces the mean of all local peaks/valleys (now `extract_bp_labels_v1()`), which counted secondary bumps as beats. On 3,000 training windows, median SBP changed from 107.2 to 128.6 mmHg. Not clinically validated and has no quality rules; fewer than two complete beats produce NaN. Saved cleaned datasets must be regenerated and models, including the CNN, retrained. |
 | Implemented, not validated | `read_data.ipynb` drops aligned windows with more than 10% zeros in either signal and replaces remaining zeros with each row's nonzero mean. | This affects notebook memory, not the saved archive. Numeric zeros are not established missing values; the rule still needs evidence. |
 | Open | Compare explicitly named max/min labels with the current peak/valley method and complete-beat alternatives. | Keep target versions separate; detector quality and boundary handling remain unresolved. |
-| Open | Choose mean versus median aggregation for valid beat-level labels. | Median is more robust to remaining outliers; this must be evaluated. |
+| Open | Choose mean versus median aggregation for valid beat-level labels. | `extract_bp_labels()` currently uses the median, which is more robust to remaining outliers; this must be evaluated against the mean. |
 | Open | Define noisy-window and physiologically implausible-value rules. | Requires documented thresholds and signal-quality criteria rather than guesses. |
 | Open | Choose PPG cleaning, normalization, and feature extraction methods. | Compare engineered features with models that learn from raw windows. |
 
