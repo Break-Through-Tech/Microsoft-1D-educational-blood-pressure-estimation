@@ -138,14 +138,20 @@ During model training and evaluation, ABP supplies the correct answers. At infer
 
 ## Current Label Extraction
 
-The current notebooks call `data/bp_utils.py`, which uses `scipy.signal.find_peaks`:
+The current notebooks call `extract_bp_labels()` in `data/bp_utils.py`, which labels each window from complete heartbeats:
 
 ```text
-SBP label = mean of detected ABP peak values
-DBP label = mean of detected ABP valley values
+1. Find systolic peaks with scipy.signal.find_peaks. A peak must stand out by at least
+   max(10 mmHg, 0.5 x (95th - 5th percentile of the window)) and be at least 0.33 s from the last one.
+2. Each peak after the first is one complete beat. Its DBP is the lowest ABP since the previous peak.
+3. SBP label = median of beat peaks; DBP label = median of beat lows.
 ```
 
-Missing peaks or valleys produce NaN. This implementation does not pair complete beats, set detection parameters, or validate signal quality. Whole-window maxima/minima remain a separate proposed baseline export. The archive contains neither label method; callers must calculate and version labels using aligned ABP. New label methods require evidence before adoption.
+Fewer than two complete beats produce NaN. The first peak is always skipped because its low may lie before the window starts.
+
+The previous method (kept as `extract_bp_labels_v1()` for comparison) averaged every local peak and valley. It counted small secondary bumps, such as the dicrotic notch, as heartbeats: on 3,000 training windows it found a median of 15 peaks per window against 7 PPG peaks. With the new method, the median SBP of those windows changed from 107.2 to 128.6 mmHg and the median DBP from 69.9 to 64.1 mmHg.
+
+The new method is an improvement, not a clinically validated algorithm, and it does not check signal quality. Datasets saved before this change, including `data/cleaned_dataset.npz`, still hold the old labels: regenerate them with `cleaning/clean_data.ipynb`, then retrain any models built on them, including the CNN. Whole-window maxima/minima remain a separate proposed baseline export. The archive contains neither label method; callers must calculate and version labels using aligned ABP. New label methods require evidence before adoption.
 
 `notebooks/read_data.ipynb` currently drops windows with more than 10% zeros in either signal and replaces remaining zeros with each row's mean of nonzero samples, after calculating labels. These changes are in notebook memory only. The split preparation does not apply or endorse those rules; zero semantics and suitable cleaning remain open.
 
