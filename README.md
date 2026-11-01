@@ -77,6 +77,7 @@ The recommended ensemble combines 80% multi-task ResNet, 13% short CNN and 7% Li
 |---|---:|---:|---:|---:|
 | Training median | 17.85 | 8.52 | 21.98 | 11.48 |
 | LightGBM, sixteen PPG features | 13.69 | 6.96 | 18.12 | 9.87 |
+| Short CNN | 12.99 | 6.59 | 17.21 | 9.49 |
 | Kernel-seven ResNet, L1 | 11.51 | 5.97 | 15.85 | 9.10 |
 | **Recommended ensemble** | **11.38** | **5.81** | **15.57** | **8.87** |
 
