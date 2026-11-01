@@ -1,0 +1,39 @@
+{
+  "dataset_version": "nn_full_pr41_20261029_v1",
+  "label_configuration": {
+    "label_version": "pr41_complete_beats_median_v2",
+    "prominence_floor_mmhg": 10.0,
+    "relative_prominence": 0.5,
+    "spread_percentiles": [
+      5,
+      95
+    ],
+    "minimum_peak_distance_s": 0.33,
+    "distance_rounding": "round(seconds*sampling_rate)",
+    "min_complete_beats": 2,
+    "aggregation": "median",
+    "dbp": "minimum in [previous_peak, peak)",
+    "source_pr": 41,
+    "source_commit": "e1b273a10200342e2d55532854f146e8f516e93a"
+  },
+  "cleaning": {
+    "sampling_rate": 125,
+    "window_samples": 625,
+    "max_zero_fraction": 0.05,
+    "min_std": 1e-06,
+    "abp_lowpass_hz": 40,
+    "abp_filter_order": 4,
+    "ppg_method": "elgendi",
+    "sbp_range": [
+      60.0,
+      250.0
+    ],
+    "dbp_range": [
+      30.0,
+      150.0
+    ],
+    "reject_repeated_max_plateaus": true
+  },
+  "review_file": "configs/preprocessing_review.json",
+  "review_sha256": "194a6e2b04fcebf4f23f75c1826b6c7b548edcb32da338c5ba9680c96c15fc5d"
+}

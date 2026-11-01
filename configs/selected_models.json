@@ -1,0 +1,175 @@
+{
+  "format_version": 1,
+  "label_version": "pr41_complete_beats_median_v2",
+  "source_table_sha256": "581e78eec0dd6ee345e22624b780e7f77d643ef27609e086f382c7ef29bddfd7",
+  "sampling_rate": 125,
+  "window_samples": 625,
+  "seeds": [
+    2026,
+    2027,
+    2028
+  ],
+  "expected_windows": {
+    "train": 363965,
+    "validation": 75601
+  },
+  "waveform_preparation": {
+    "version": "ppg_boundaries_v1",
+    "samples": 625,
+    "sampling_rate": 125,
+    "padding": 250,
+    "reflection": "odd",
+    "lowcut": 0.5,
+    "highcut": 8,
+    "order": 2,
+    "derivative_window": 11,
+    "derivative_polynomial": 3,
+    "calculation": "float64",
+    "storage": "float32",
+    "zero_interpolation": "existing per-window np.interp before reflection",
+    "filtered_extension": "quantized float32 before derivatives"
+  },
+  "components": {
+    "multitask_resnet": {
+      "family": "cnn",
+      "parameters": {
+        "architecture": "residual_v1",
+        "representation": "derivatives",
+        "normalization": "global",
+        "channels": [
+          16,
+          32,
+          64
+        ],
+        "learning_rate": 0.001,
+        "weight_decay": 0.0001,
+        "batch_size": 256,
+        "kernel_size": 7,
+        "loss": "l1",
+        "auxiliary_classification": true,
+        "auxiliary_lambda": 0.2
+      },
+      "durations": {
+        "2026": [
+          29
+        ],
+        "2027": [
+          21
+        ],
+        "2028": [
+          41
+        ]
+      }
+    },
+    "resnet_l1": {
+      "family": "cnn",
+      "parameters": {
+        "architecture": "residual_v1",
+        "representation": "derivatives",
+        "normalization": "global",
+        "channels": [
+          16,
+          32,
+          64
+        ],
+        "learning_rate": 0.001,
+        "weight_decay": 0.0001,
+        "batch_size": 256,
+        "kernel_size": 7,
+        "loss": "l1"
+      },
+      "durations": {
+        "2026": [
+          36
+        ],
+        "2027": [
+          20
+        ],
+        "2028": [
+          21
+        ]
+      }
+    },
+    "cnn_c": {
+      "family": "cnn",
+      "parameters": {
+        "representation": "derivatives",
+        "normalization": "global",
+        "channels": [
+          16,
+          32,
+          64
+        ],
+        "learning_rate": 0.001,
+        "weight_decay": 0.0001,
+        "batch_size": 256
+      },
+      "durations": {
+        "2026": [
+          48
+        ],
+        "2027": [
+          53
+        ],
+        "2028": [
+          63
+        ]
+      }
+    },
+    "lightgbm_16": {
+      "family": "lightgbm",
+      "parameters": {
+        "learning_rate": 0.02433531639347024,
+        "num_leaves": 255,
+        "min_child_samples": 50,
+        "reg_lambda": 10.0
+      },
+      "durations": {
+        "2026": [
+          2335,
+          714
+        ],
+        "2027": [
+          2230,
+          1207
+        ],
+        "2028": [
+          1749,
+          1227
+        ]
+      },
+      "feature_names": [
+        "ppg_clean_mean",
+        "ppg_clean_std",
+        "ppg_clean_range",
+        "median_interpeak_interval_s",
+        "median_rate_bpm",
+        "median_pulse_amplitude",
+        "median_rise_time_s",
+        "median_decay_time_s",
+        "median_rise_slope",
+        "median_decay_slope",
+        "median_half_amplitude_width_s",
+        "median_pulse_area",
+        "pulse_amplitude_cv",
+        "median_pulse_skewness",
+        "median_post_peak_area_fraction",
+        "median_normalized_max_upstroke_slope"
+      ]
+    }
+  },
+  "models": {
+    "recommended": {
+      "multitask_resnet": 0.8,
+      "cnn_c": 0.13,
+      "lightgbm_16": 0.07
+    },
+    "resnet_l1": {
+      "resnet_l1": 1.0
+    },
+    "lightgbm_16": {
+      "lightgbm_16": 1.0
+    }
+  },
+  "selection": "Frozen inner-selected configurations and fixed per-seed full-training durations; no original-validation reselection."
+}

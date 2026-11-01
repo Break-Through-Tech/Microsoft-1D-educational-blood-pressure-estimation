@@ -1,0 +1,62 @@
+{
+  "accepted": true,
+  "reviewer": "Assistant engineering review of actual waveform plots; not clinical validation",
+  "label_configuration": {
+    "label_version": "pr41_complete_beats_median_v2",
+    "prominence_floor_mmhg": 10.0,
+    "relative_prominence": 0.5,
+    "spread_percentiles": [
+      5,
+      95
+    ],
+    "minimum_peak_distance_s": 0.33,
+    "distance_rounding": "round(seconds*sampling_rate)",
+    "min_complete_beats": 2,
+    "aggregation": "median",
+    "dbp": "minimum in [previous_peak, peak)",
+    "source_pr": 41,
+    "source_commit": "e1b273a10200342e2d55532854f146e8f516e93a"
+  },
+  "cleaning": {
+    "sampling_rate": 125,
+    "window_samples": 625,
+    "max_zero_fraction": 0.05,
+    "min_std": 1e-06,
+    "abp_lowpass_hz": 40,
+    "abp_filter_order": 4,
+    "ppg_method": "elgendi",
+    "sbp_range": [
+      60.0,
+      250.0
+    ],
+    "dbp_range": [
+      30.0,
+      150.0
+    ],
+    "reject_repeated_max_plateaus": true
+  },
+  "code_hashes": {
+    "data/bp_utils.py": "ed35cde78a1b038c1efb7c727c1b4c02a81808a348d5d7fc76e79da411686df0",
+    "cleaning/pipeline.py": "6e97027e16df7afbe68067bcc671fcf0f9f9df55e76a2e1214fb7ac5ef4cb9ca"
+  },
+  "review_windows": 48,
+  "distinct_training_recordings": 48,
+  "development_windows": 32,
+  "confirmation_windows": 16,
+  "blind_notes_sha256": "4c31416d8ef405099840f6bdecbd511970b13f5fd3e3692a3c1198261c9fd487",
+  "manifest_sha256": "11ab37a30794be32919bf3d5ca0a2af57280de09c8e11172cab283a609f8fee2",
+  "selection": "Seed 2026; 240 canonical training recordings; up to 12 evenly spaced windows per recording screened; 160 recording development pool and 80 confirmation pool; category-enriched selection with one review window per recording.",
+  "decision": "Keep PR41 parameters and paired medians unchanged for the team experiment. Main systolic pulses and interpeak minima agree visually on ordinary and secondary-bump examples. This is a bounded engineering acceptance, not proof that every retained window is artifact free.",
+  "confirmation": "Inspected all 16 reserved training plots and detector overlays. Main pulses detected on ordinary examples, high pressure examples, and R38 fast rhythm (13 peaks/12 pairs). R33 has missed low-amplitude beats; its retained paired-median pressure summary remains representative to visual precision. Noise/spikes remain a documented limitation. No NN scores used.",
+  "saturation_rule": "Reject raw ABP windows with >=3 separate exactly-constant runs >=5 samples long at the window maximum. All 11 flagged pilot training examples visually exhibit repeated clipping, across 2 recordings; R11/R12 and R37 provide additional distinct-recording clipped examples. Ordinary rounded high-pressure R09/R10/R36 are controls. Rule has limited reviewed coverage; retain counts and flags.",
+  "targeted_rejections": "Inspected all 27 pilot training rejection plots. Most show loss of pulsatility, large baseline steps, or signal corruption. F01/F05 contain abrupt morphology/pressure transitions. F09/F13 include visible small pulses that fail the 10-mmHg prominence policy; do not describe every failure as artifact.",
+  "limitations": [
+    "10-mmHg floor intentionally restricts coverage of low pulse pressure; R01 rejected despite visible small pulses. Other low-amplitude windows can have missed beats, so beat-rate diagnostics are not ground truth.",
+    "Minimum distance restricts very fast rhythms; do not claim general arrhythmia coverage.",
+    "Isolated spikes can create extra peaks or low between-beat minima. Medians reduce but do not eliminate this; no broad unvalidated artifact removal was added.",
+    "Five-second window boundaries discard incomplete peak pairs, including the first detected peak as an SBP sample.",
+    "Patient independence and clinical/device generalization are unestablished."
+  ],
+  "automatic_window_id_exclusions": [],
+  "model_scores_used": false
+}
