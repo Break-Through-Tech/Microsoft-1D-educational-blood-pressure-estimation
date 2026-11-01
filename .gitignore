@@ -10,5 +10,17 @@ data/derived/
 data/dataset-build-*/
 data/dataset-build-*.npz
 .venv/
+.venv-comparison/
 __pycache__/
 **/.ipynb_checkpoints/
+.cache/
+.vscode/
+.venv-*/
+artifacts/
+/tests_preprocessing_*.log
+
+# Release downloads placed in the repository root during setup.
+/selected-v1.zip
+/evaluation-v1.zip
+/history-v1.zip
+/SHA256SUMS.txt
