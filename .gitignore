@@ -10,5 +10,11 @@ data/derived/
 data/dataset-build-*/
 data/dataset-build-*.npz
 .venv/
+.venv-comparison/
 __pycache__/
 **/.ipynb_checkpoints/
+.cache/
+.vscode/
+.venv-*/
+artifacts/
+/tests_preprocessing_*.log
