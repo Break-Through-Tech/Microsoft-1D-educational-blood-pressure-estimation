@@ -15,6 +15,7 @@ a complete 625-sample window.
 from pathlib import Path
 
 import h5py
+import neurokit2 as nk
 import numpy as np
 
 DATA_DIR = Path(__file__).parent
@@ -23,6 +24,7 @@ MAT_FILES = ["Part_1.mat", "Part_2.mat", "Part_3.mat", "Part_4.mat"]
 OUTPUT_PATH = DATA_DIR / "processed_dataset.npz"
 
 WINDOW_SIZE = 625  # 125 Hz * 5 seconds
+SAMPLING_RATE = 125
 
 # Column order within each (N, 3) record, confirmed against notes.md / value ranges.
 PPG_COL, ABP_COL, ECG_COL = 0, 1, 2
@@ -45,6 +47,24 @@ def split_into_windows(record, window_size=WINDOW_SIZE):
     return usable.reshape(n_windows, window_size, 3)
 
 
+def clean_ecg_signal(ecg, sampling_rate=SAMPLING_RATE):
+    """Clean one continuous ECG recording with NeuroKit2.
+
+    NeuroKit's ECG filters require finite input.  The source data contains a
+    small number of missing ECG samples, so interpolate those samples before
+    filtering.  Cleaning the continuous recording before windowing avoids
+    introducing a filter edge at every five-second window.
+    """
+    ecg = np.asarray(ecg, dtype=float)
+    finite = np.isfinite(ecg)
+    if not finite.any():
+        raise ValueError("ECG recording contains no finite samples")
+    if not finite.all():
+        sample_indices = np.arange(ecg.size)
+        ecg = np.interp(sample_indices, sample_indices[finite], ecg[finite])
+    return np.asarray(nk.ecg_clean(ecg, sampling_rate=sampling_rate), dtype=float)
+
+
 def build_datasets(data_dir=RAW_DATA_DIR, mat_files=MAT_FILES, window_size=WINDOW_SIZE):
     """Load all mat files and return (ppg, abp, ecg) arrays of shape (n_windows, window_size)."""
     ppg_windows, abp_windows, ecg_windows = [], [], []
@@ -52,6 +72,8 @@ def build_datasets(data_dir=RAW_DATA_DIR, mat_files=MAT_FILES, window_size=WINDO
     for filename in mat_files:
         filepath = data_dir / filename
         for record in load_mat_records(filepath):
+            record = np.asarray(record, dtype=float).copy()
+            record[:, ECG_COL] = clean_ecg_signal(record[:, ECG_COL])
             windows = split_into_windows(record, window_size)
             if windows.shape[0] == 0:
                 continue
