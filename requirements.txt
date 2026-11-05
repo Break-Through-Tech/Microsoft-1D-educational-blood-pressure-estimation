@@ -1,1 +1,14 @@
-
+# Python 3.13. Install CPU or CUDA PyTorch separately; see SETUP.md.
+numpy==2.5.3
+pandas==2.3.3
+neurokit2==0.2.13
+scipy==1.18.1
+h5py==3.16.0
+joblib==1.6.0
+scikit-learn==1.9.1
+matplotlib==3.11.2
+lightgbm==4.7.0
+nbformat==5.11.1
+nbclient==0.11.0
+ipykernel==7.3.0
+notebook==7.6.2

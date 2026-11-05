@@ -1,18 +1,10 @@
 # CufflessAI: An Educational Blood Pressure Estimation
 
-See the [project roadmap](ROADMAP.md) for the current implementation assessment, research-informed next steps, proposed October–November phases, and completion criteria. Dataset findings are documented in [data notes](data/DATA_NOTES.md) and the [EDA summary](eda/EDA-readme.md).
-
-For modeling, follow [dataset setup](data/README.md), run `python data/load_files.py`, then consume `data.load_files.iter_split_windows("train")`. The prepared archive includes stable IDs and saved recording-based splits; exact duplicate copies are excluded by this loader. [Data notes](data/DATA_NOTES.md) explain validation/test use and ID preservation through preprocessing.
-
-> 💡 **Note for the team:** This is just a template. Update the above title with your AI Studio Challenge Project name. Remove all guidance notes and example text in this template and populate this README with your own content. You can work on this README throughout AI Studio, and get feedback from your AI Studio Coach and Challenge Advisor before finalizing it.  
-
----
-
 ### 👥 **Team Members**
 
 | Name             | GitHub Handle | Contribution                                                             |
 |------------------|---------------|--------------------------------------------------------------------------|
-| Kushagra Dhall    | @KR-0000 | EDA, Data setup            |
+| Kushagra Dhall    | @KR-0000 | EDA, data setup, model comparisons, ensembles and evaluation |
 | Ingrid Escalante-Hernandez   | @imehtn     | Data collection, exploratory data analysis (EDA), dataset documentation  |
 | Katherine Wu     | @wukatherine  | EDA, Data visualization                 |
 | Joanna Liu      | @lte24       | Missing values  |
@@ -21,66 +13,15 @@ For modeling, follow [dataset setup](data/README.md), run `python data/load_file
 | Harshitha Venkateswaran       | @harshithavenkateswaran-code    |       feature engineering     |
 | Tanzina Sumona       | @TanzinaS    |       developing 1D CNN model using raw PPG data     |
 
----
-
 ## 🎯 **Project Highlights**
 
-**Example:**
+We estimate systolic and diastolic blood pressure from five-second PPG signals. Our selected ensemble achieved validation mean absolute errors of 11.38 mmHg for SBP and 5.81 mmHg for DBP.
 
-- Developed a machine learning model using `[model type/technique]` to address `[challenge project task]`.
-- Achieved `[key metric or result]`, demonstrating `[value or impact]` for `[host company]`.
-- Generated actionable insights to inform business decisions at `[host company or stakeholders]`.
-- Implemented `[specific methodology]` to address industry constraints or expectations.
-
----
-
-## 👩🏽‍💻 **Setup and Installation**
-
-- Clone the repository and enter its folder:
-
-  ```powershell
-  git clone https://github.com/Break-Through-Tech/Microsoft-1D-educational-blood-pressure-estimation.git
-  cd Microsoft-1D-educational-blood-pressure-estimation
-  ```
-
-- Create and activate a Python environment, then install the data-processing dependencies. These commands use Windows PowerShell:
-
-  ```powershell
-  python -m venv .venv
-  .\.venv\Scripts\Activate.ps1
-  python -m pip install h5py numpy pandas scipy jupyter
-  ```
-
-- Follow [dataset setup](data/README.md) to download the UCI data. Place `Part_1.mat` through `Part_4.mat` in `data/raw/`, keeping their original names. Data files are not included in the repository.
-
-- From the repository root, prepare your local dataset:
-
-  ```powershell
-  python data/load_files.py
-  ```
-
-  This command creates `data/processed_dataset.npz` with aligned signals, window IDs, and saved train/validation/test assignments. For model inputs, use `iter_split_windows` from `data.load_files`; see [data notes](data/DATA_NOTES.md) for examples.
-
-- **Optional example (not required for setup):** after preparing the dataset, run the following to read up to 1,000 training windows and demonstrate keeping signals and IDs aligned through filtering. It does not train a model or modify the dataset.
-
-  ```powershell
-  python data/example_split_usage.py --split train --limit 1000
-  ```
-
-- To open the existing preprocessing notebook, run `jupyter notebook notebooks/read_data.ipynb`.
-- **NeuroKit2 setup:** TODO — add the teammate-confirmed package version, dependencies, and feature-extraction command.
-
----
+For installation, downloads, prediction and training, use [SETUP.md](SETUP.md). The [walkthrough notebook](notebooks/project_walkthrough.ipynb) presents the workflow with saved results and runnable examples.
 
 ## 🏗️ **Project Overview**
 
-**Describe:**
-
-- How this project is connected to the Break Through Tech AI Program
-- Your AI Studio host company and the project objective and scope
-- The real-world significance of the problem and the potential impact of your work
-
----
+This Microsoft challenge is part of Break Through Tech AI Studio. We explore whether optical pulse signals can estimate blood pressure using the public UCI dataset, comparing waveform models with models built from extracted PPG features.
 
 ## 📊 **Data Exploration**
 
@@ -98,7 +39,7 @@ The project uses the **UCI Cuff-Less Blood Pressure Estimation dataset**, distri
 
 The data was inspected record by record to check record shapes, channel alignment, sample lengths, and invalid values. The loader reads the three synchronized channels, divides each record into complete 625-sample windows, and drops any remaining samples shorter than a full window rather than padding them. It saves the aligned windows to `processed_dataset.npz`.
 
-For the current baseline, SBP and DBP are derived from the **maximum and minimum ABP sample in each five-second window**, respectively. ECG remains in the processed archive, but the initial modeling task uses PPG to predict the ABP-derived labels.
+During initial exploration, SBP and DBP were derived from the **maximum and minimum ABP sample in each five-second window**, respectively. ECG remains in the processed archive, but the modeling task uses PPG to predict the ABP-derived labels.
 
 The EDA also checked PPG/ABP numeric validity, counted numeric zeros in PPG, searched for exact repeated recordings, and compared whole-window ABP extrema with exploratory beat-level extrema. 
 
@@ -114,11 +55,7 @@ The EDA also checked PPG/ABP numeric validity, counted numeric zeros in PPG, sea
 
 ### Challenges and assumptions
 
-- **Label quality:** A single maximum and minimum can be affected by noise or artifacts. Beat-based peak/valley detection and aggregation may produce more robust labels, but the method and quality criteria are not finalized.
-- **Leakage and provenance:** Source-record IDs should be preserved so duplicates and related windows can be kept together across data splits. The files do not provide verified patient-level identity, so a record should not be assumed to equal a unique patient.
-- **Signal quality:** Numeric zeros were observed, but their cause is unknown. Rules for noisy-window rejection and physiologically plausible values still need to be established. Feature engineering to address this is in progress.
-- **Model preparation:** PPG normalization and the choice between raw windows, engineered features, or both remain open.
-- **Scope:** PPG is treated as the model input and synchronized ABP as the training reference. PPG amplitude is not itself a blood-pressure measurement, and the current whole-window ABP labels are a baseline rather than finalized ground truth.
+Recordings do not provide verified patient identities. Known exact duplicates are excluded, and windows from a recording stay together in the split. Numeric zeros alone do not establish signal quality. The final pipeline derives reference pressures from the medians of complete ABP beats rather than the original whole-window extrema.
 
 ### Visualizations 
 <img width="1690" height="590" alt="download" src="https://github.com/user-attachments/assets/29f91ac4-71cd-4de4-8811-c07ae430a25b" />
@@ -132,54 +69,37 @@ View of what zero-value runs look like in the data
 
 ## 🧠 **Model Development**
 
-**You might consider describing the following (as applicable):**
-
-* Model(s) used (e.g., CNN with transfer learning, regression models)
-* Feature selection and Hyperparameter tuning strategies
-* Training setup (e.g., % of data for training/validation, evaluation metric, baseline performance)
-
-
----
+The recommended ensemble combines 80% multi-task ResNet, 13% short CNN and 7% LightGBM using sixteen PPG features. The waveform models learn from pulse shape, while LightGBM uses extracted features. Their predictions are combined using fixed weights selected within training.
 
 ## 📈 **Results & Key Findings**
 
-**You might consider describing the following (as applicable):**
+| Model | SBP MAE | DBP MAE | SBP RMSE | DBP RMSE |
+|---|---:|---:|---:|---:|
+| Training median | 17.85 | 8.52 | 21.98 | 11.48 |
+| LightGBM, sixteen PPG features | 13.69 | 6.96 | 18.12 | 9.87 |
+| Short CNN | 12.99 | 6.59 | 17.21 | 9.49 |
+| Kernel-seven ResNet, L1 | 11.51 | 5.97 | 15.85 | 9.10 |
+| **Recommended ensemble** | **11.38** | **5.81** | **15.57** | **8.87** |
 
-* Performance metrics (e.g., Accuracy, F1 score, RMSE)
-* How your model performed
-* Insights from evaluating model fairness
+Errors are in mmHg on 75,601 validation windows from 1,769 recordings. Model rows average three seed-specific metrics, not predictions across seeds. The test set remains reserved.
 
-**Potential visualizations to include:**
+![Development-validation model comparison](reports/final/plots/selected_comparison.png)
 
-* Confusion matrix, precision-recall curve, feature importance plot, prediction distribution, outputs from fairness or explainability tools
+![Ensemble predictions grouped by pressure range](reports/final/plots/ensemble_confusion.png)
 
----
+## 🚀 **Limitations and Next Steps**
 
-## 🚀 **Next Steps**
-
-**You might consider addressing the following (as applicable):**
-
-* What are some of the limitations of your model?
-* What would you do differently with more time/resources?
-* What additional datasets or techniques would you explore?
-
----
+Errors remain larger at pressure extremes. Recording-based splits cannot establish performance on unseen patients because patient identities are unavailable. Validation informed development; the test set remains reserved. Next steps include evaluating that reserved set and testing generalization to another dataset or device.
 
 ## 📝 **License**
 
-Specify how your project can be used by others. Choose an appropriate license and link it here (e.g., MIT, Apache 2.0). Make sure your Challenge Advisor approves of the selected license type. 
+A project license has not yet been selected.
 
-**Example:**
-This project is licensed under the MIT License.
+## 📄 **References**
 
----
+- [UCI Cuff-Less Blood Pressure Estimation dataset](https://archive.ics.uci.edu/dataset/340/cuff%2Bless%2Bblood%2Bpressure%2Bestimation)
+- [Challenge project overview](Challenge-Project-Overview.md)
 
-## 📄 **References** (Optional but encouraged)
+## 🙏 **Acknowledgements**
 
-Cite relevant papers, articles, or resources that supported your project.
-
----
-
-## 🙏 **Acknowledgements** (Optional but encouraged)
-
-Thank your Challenge Advisor, host company representatives, TA, and others who supported your project.
+Thank you to our Challenge Advisors Fatima Rafiqui and Wee Hyong Tok, our coach Anshul Rehpande, Microsoft representatives, our TA, and everyone who supported our project.

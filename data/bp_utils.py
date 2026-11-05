@@ -19,6 +19,22 @@ MIN_PEAK_DISTANCE_S = 0.33  # seconds between systolic peaks (about 180 bpm max)
 MIN_BEATS = 2               # fewer complete beats -> NaN labels
 
 
+def complete_beats(abp_window, fs=FS):
+    """Return systolic peaks and paired lows without adding endpoint beats."""
+    x = np.asarray(abp_window, dtype=np.float64)
+    empty = np.array([], dtype=int)
+    if not np.isfinite(fs) or fs <= 0:
+        raise ValueError("fs must be positive and finite")
+    if x.ndim != 1 or len(x) < 3 or not np.isfinite(x).all():
+        return empty, empty
+    low, high = np.percentile(x, [5, 95])
+    prominence = max(MIN_PROMINENCE, RELATIVE_PROMINENCE * (high - low))
+    peaks, _ = find_peaks(x, prominence=prominence,
+                         distance=max(1, int(round(MIN_PEAK_DISTANCE_S * fs))))
+    lows = np.array([a + np.argmin(x[a:b]) for a, b in zip(peaks[:-1], peaks[1:])], dtype=int)
+    return peaks, lows
+
+
 def extract_bp_labels(abp_window, fs=FS):
     """Extract SBP and DBP from a single ABP window using complete heartbeats.
 
@@ -51,16 +67,9 @@ def extract_bp_labels(abp_window, fs=FS):
     """
     abp_window = np.asarray(abp_window, dtype=np.float64)
 
-    low, high = np.percentile(abp_window, [5, 95])
-    prominence = max(MIN_PROMINENCE, RELATIVE_PROMINENCE * (high - low))
-    distance = int(round(MIN_PEAK_DISTANCE_S * fs))
-    peaks, _ = find_peaks(abp_window, prominence=prominence, distance=distance)
-
-    beat_sbp = []
-    beat_dbp = []
-    for previous_peak, peak in zip(peaks[:-1], peaks[1:]):
-        beat_sbp.append(abp_window[peak])
-        beat_dbp.append(abp_window[previous_peak:peak].min())
+    peaks, lows = complete_beats(abp_window, fs)
+    beat_sbp = abp_window[peaks[1:]]
+    beat_dbp = abp_window[lows]
 
     n_peaks = len(peaks)
     n_beats = len(beat_sbp)
