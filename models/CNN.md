@@ -1,6 +1,6 @@
 # 1D CNN for blood pressure from PPG
 
-> **Verified 2026-11-04** against PR #46 (`feature/29-feature-mlp`, commit `dc038fd`) and `main` (commit `468bcd7`).
+> **Verified 2026-11-08** against `main` at commit `7082edf` (after PR #46 and PR #48 merged on 2026-11-05). The CNN code, configuration and saved metrics described here are unchanged since PR #46's final commit `dc038fd`, which this document was first checked against on 2026-11-04.
 > Numbers come from `reports/final/cnn_metrics.csv` and `reports/final/selected_metrics.csv`; settings come from `configs/selected_models.json`. Nothing here is clinically validated.
 
 ## Contents
@@ -26,8 +26,8 @@ There are two versions:
 
 | Version | Where | Status |
 |---|---|---|
-| **Original prototype** | `main`, PR #39 (`models/cnn_model.py`, `models/train_cnn.py`) | Small proof of concept, trained on 300 recordings for 3 epochs |
-| **`cnn_c`** | PR #46, not yet merged | Same network design, with three input channels and full-scale training. It is **13% of the team's recommended ensemble.** |
+| **Original prototype** | PR #39, merged 2026-10-28 (`models/cnn_model.py`, `models/train_cnn.py`) | Small proof of concept, trained on 300 recordings for 3 epochs |
+| **`cnn_c`** | PR #46, merged 2026-11-05 | Same network design, with three input channels and full-scale training. It is **13% of the team's recommended ensemble.** |
 
 On validation data, `cnn_c` reaches **12.99 mmHg SBP / 6.59 mmHg DBP mean absolute error**, against 17.85 / 8.52 for always predicting the training median. It is not the strongest single model: the ResNet scores 11.51 / 5.97.
 
@@ -75,7 +75,7 @@ flowchart TB
     out -.->|"× training target std<br/>+ training target mean"| mmhg["SBP, DBP in mmHg"]
 ```
 
-*Total: 13,378 trainable parameters. The original prototype on `main` is the same network with one input channel (Conv1d 1 → 16, 128 parameters in the first layer, 13,154 in total). The dashed step is done by `predict_array`, outside the network.*
+*Total: 13,378 trainable parameters. The original prototype (PR #39) is the same network with one input channel (Conv1d 1 → 16, 128 parameters in the first layer, 13,154 in total). The dashed step is done by `predict_array`, outside the network.*
 
 The table gives the same layers for either version; `C` is the number of input channels (1 in the original, 3 in `cnn_c`).
 
@@ -108,7 +108,7 @@ The table gives the same layers for either version; `C` is the number of input c
 
 ## 4. From raw PPG to mmHg
 
-### Original prototype (`main`)
+### Original prototype (PR #39)
 
 1. Input is `data/cleaned_dataset.npz` from the PR #40 cleaning notebook: NeuroKit-cleaned PPG plus SBP/DBP **means of detected peaks and valleys**. Those are the older labels that PR #41 later replaced.
 2. Windows with non-finite values, or with SBP ≤ DBP, are dropped (`valid_mask`).
@@ -239,7 +239,7 @@ PR #39 reports that it trained on 300 recordings and validated on 100 for 3 epoc
 
 ## 7. How to use it
 
-### Original prototype (`main`)
+### Original prototype (PR #39, `models/train_cnn.py`)
 
 ```bash
 python -m models.train_cnn
@@ -290,7 +290,7 @@ Unlike `predict_ppg`, this skips the PPG quality checks and the checksum verific
 
 ## 8. Tests
 
-These tests are in PR #46 and are available on this branch:
+These tests are on `main` (`tests/test_cnn_model.py` from PR #39, `tests/test_selected_models.py` from PR #46):
 
 | File | Covers |
 |---|---|
@@ -302,15 +302,15 @@ python -m unittest tests.test_cnn_model tests.test_selected_models -v
 python -m unittest discover -s tests          # full suite, synthetic data only
 ```
 
-**Additional tests, not part of this documentation PR.** Three more test files are on Tanzina's separate branch `test/cnn-label-regression` (commit `3702095`, built on PR #46). They will be submitted separately and don't exist on this branch:
+**Regression and smoke tests (PR #48).** Tanzina added three more test files in PR #48 (`test/cnn-label-regression`, commit `3702095`), merged into `main` on 2026-11-05:
 
 | File | Covers |
 |---|---|
-| `tests/test_wave_models.py` | Finite outputs for every variant; `main` checkpoint compatibility; ResNet heads |
+| `tests/test_wave_models.py` | Finite outputs for every variant; compatibility with original-prototype (PR #39) checkpoints; ResNet heads |
 | `tests/test_wave_training_smoke.py` | 2-epoch `fit_wave` runs; normalization uses training labels only |
 | `tests/test_bp_label_regression.py` | Refactored labels match PR #41 exactly |
 
-On that branch, run `python -m unittest tests.test_wave_models tests.test_wave_training_smoke tests.test_bp_label_regression -v`. All 15 of those tests passed on 2026-11-04.
+Run `python -m unittest tests.test_wave_models tests.test_wave_training_smoke tests.test_bp_label_regression -v`. Previously verified: all 15 of those tests passed on 2026-11-04 (PR #48 reports 81 passing tests across the full suite). They have not been re-run for this documentation update.
 
 ## 9. Limitations
 
@@ -395,6 +395,6 @@ Included in this documentation:
 | `cnn_pipeline.png` | PPG → Input C → CNN → mmHg → ensemble | Would go in `models/figures/` |
 | `cnn_learning_curve.png` | `cnn_c` training history | Needs `cnn_c`'s `history.csv`, which isn't in the repo |
 
-**Keeping this file current:** after new commits to PR #46, run
-`git diff dc038fd origin/feature/29-feature-mlp -- models/cnn_model.py models/train_waveform_comparison.py models/preprocessing_inputs.py configs/selected_models.json reports/final/cnn_metrics.csv`,
+**Keeping this file current:** after new commits to `main`, run
+`git diff 7082edf origin/main -- models/cnn_model.py models/train_waveform_comparison.py models/preprocessing_inputs.py configs/selected_models.json reports/final/cnn_metrics.csv`,
 update the affected sections, and refresh the verification line at the top.
