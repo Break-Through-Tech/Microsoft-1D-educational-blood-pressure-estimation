@@ -7,5 +7,6 @@
 - Recommend the 80% multi-task ResNet, 13% short CNN and 7% LightGBM ensemble. Reported results average metrics from three seed-specific fits.
 - Reserve the test set. Supported evaluation accepts training and validation only.
 - Keep shared code and selected results in Git. Distribute saved models and optional history separately.
+- The minimal live demo includes one small ResNet checkpoint and twelve released training examples in Git to avoid startup downloads. Full model bundles remain separate release assets.
 
 See [SETUP.md](SETUP.md) for the workflow and README for findings.

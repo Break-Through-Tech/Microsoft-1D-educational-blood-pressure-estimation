@@ -1,0 +1,9 @@
+{
+  "format_version": 1,
+  "sha256": {
+    "config.json": "083428d08f42d667c8d0456bc1359bf182e3e7f55f17da50f7a68301b83f3de8",
+    "samples/ppg.npz": "903e85fe83091d866a066c7f4c576008e5de3cef0c7a53221ef6755dcd1f5379",
+    "samples/references.csv": "97d908a9c572fac39017cbfed80e339b9a52324e6ca36a9d577ebc3702f817bc",
+    "components/resnet_l1/seed_2026/model.pt": "8e3c4a8a82bc96d0a27b5ddcd431bb8e5c4ba2d63f822d77aabdd0cf1ead1613"
+  }
+}

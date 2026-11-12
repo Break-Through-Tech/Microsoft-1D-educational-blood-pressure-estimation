@@ -19,6 +19,8 @@ We estimate systolic and diastolic blood pressure from five-second PPG signals. 
 
 For installation, downloads, prediction and training, use [SETUP.md](SETUP.md). The [walkthrough notebook](notebooks/project_walkthrough.ipynb) presents the workflow with saved results and runnable examples.
 
+For a minimal web interface that runs live CPU prediction on bundled PPG examples, see the [Streamlit demo](demo/README.md).
+
 ## 🏗️ **Project Overview**
 
 This Microsoft challenge is part of Break Through Tech AI Studio. We explore whether optical pulse signals can estimate blood pressure using the public UCI dataset, comparing waveform models with models built from extracted PPG features.

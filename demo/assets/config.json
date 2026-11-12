@@ -1,0 +1,67 @@
+{
+  "format_version": 1,
+  "label_version": "pr41_complete_beats_median_v2",
+  "source_table_sha256": "581e78eec0dd6ee345e22624b780e7f77d643ef27609e086f382c7ef29bddfd7",
+  "sampling_rate": 125,
+  "window_samples": 625,
+  "seeds": [
+    2026
+  ],
+  "expected_windows": {
+    "train": 363965,
+    "validation": 75601
+  },
+  "waveform_preparation": {
+    "version": "ppg_boundaries_v1",
+    "samples": 625,
+    "sampling_rate": 125,
+    "padding": 250,
+    "reflection": "odd",
+    "lowcut": 0.5,
+    "highcut": 8,
+    "order": 2,
+    "derivative_window": 11,
+    "derivative_polynomial": 3,
+    "calculation": "float64",
+    "storage": "float32",
+    "zero_interpolation": "existing per-window np.interp before reflection",
+    "filtered_extension": "quantized float32 before derivatives"
+  },
+  "components": {
+    "resnet_l1": {
+      "family": "cnn",
+      "parameters": {
+        "architecture": "residual_v1",
+        "representation": "derivatives",
+        "normalization": "global",
+        "channels": [
+          16,
+          32,
+          64
+        ],
+        "learning_rate": 0.001,
+        "weight_decay": 0.0001,
+        "batch_size": 256,
+        "kernel_size": 7,
+        "loss": "l1"
+      },
+      "durations": {
+        "2026": [
+          36
+        ],
+        "2027": [
+          20
+        ],
+        "2028": [
+          21
+        ]
+      }
+    }
+  },
+  "models": {
+    "resnet_l1": {
+      "resnet_l1": 1.0
+    }
+  },
+  "selection": "Frozen inner-selected configurations and fixed per-seed full-training durations; no original-validation reselection."
+}

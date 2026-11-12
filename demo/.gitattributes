@@ -1,0 +1,2 @@
+# Preserve the bytes covered by assets/manifest.json on every platform.
+assets/** -text
