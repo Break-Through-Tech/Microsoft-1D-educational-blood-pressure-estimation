@@ -1,5 +1,7 @@
 # CufflessAI: An Educational Blood Pressure Estimation
 
+**[Open the live demo](https://microsoft-1d-educational-blood-pressure-estimation.streamlit.app/)** — Run live blood pressure prediction on bundled PPG examples. Educational prototype.
+
 ### 👥 **Team Members**
 
 | Name             | GitHub Handle | Contribution                                                             |
