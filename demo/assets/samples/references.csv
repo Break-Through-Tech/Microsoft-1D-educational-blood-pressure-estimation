@@ -1,0 +1,13 @@
+window_id,source_record_id,split,sbp,dbp
+Part_1:record_0:window_0,Part_1:record_0,train,121.61770450139524,67.07622623596487
+Part_1:record_0:window_1,Part_1:record_0,train,124.36802075732044,68.80694680877515
+Part_1:record_0:window_2,Part_1:record_0,train,125.80999954016184,69.79219438520488
+Part_1:record_0:window_3,Part_1:record_0,train,122.99106750823168,67.56662441986342
+Part_1:record_0:window_4,Part_1:record_0,train,125.6770058436714,69.26203586787933
+Part_1:record_0:window_5,Part_1:record_0,train,128.6142054507554,69.35258739907205
+Part_1:record_0:window_6,Part_1:record_0,train,126.58129492281785,69.36316555915143
+Part_1:record_0:window_7,Part_1:record_0,train,128.86426170177134,70.29053724856904
+Part_1:record_0:window_8,Part_1:record_0,train,129.38966734418509,71.06940989616393
+Part_1:record_0:window_9,Part_1:record_0,train,126.88784698498978,68.96994748218135
+Part_1:record_0:window_10,Part_1:record_0,train,128.59267560376713,69.97885324399417
+Part_1:record_0:window_11,Part_1:record_0,train,129.87096214154218,70.66739905889335

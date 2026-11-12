@@ -1,0 +1,9 @@
+# Python 3.13. CPU wheel avoids installing CUDA libraries on the host.
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch==2.14.1+cpu
+streamlit==1.67.0
+numpy==2.5.3
+pandas==2.3.3
+scipy==1.18.1
+scikit-learn==1.9.1
+h5py==3.16.0
