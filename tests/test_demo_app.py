@@ -28,6 +28,34 @@ class DemoTests(unittest.TestCase):
         self.assertEqual(len(app.error), 0)
         self.assertNotEqual(first, [metric.value for metric in app.metric])
 
+    def test_model_comparison_matches_saved_validation_results(self):
+        import csv
+        import json
+        from statistics import mean
+        from streamlit.testing.v1 import AppTest
+
+        app = AppTest.from_file(str(ROOT / "demo/streamlit_app.py"), default_timeout=90).run()
+        self.assertEqual(len(app.exception), 0)
+        table = app.dataframe[0].value.set_index("Model")
+        names = {"training_median": "Training-median baseline", "lightgbm_16": "LightGBM (16 PPG features)",
+                 "cnn_c": "Short CNN", "resnet_l1": "ResNet (L1, standalone)",
+                 "recommended": "Recommended ensemble"}
+        self.assertEqual(list(table.index), list(names.values()))
+        rows = []
+        for name in ("selected_metrics.csv", "cnn_metrics.csv"):
+            with open(ROOT / "reports/final" / name, newline="") as handle:
+                rows += [row for row in csv.DictReader(handle) if row["split"] == "validation"]
+        for model, label in names.items():
+            for column, shown in (("sbp_mae", "SBP MAE"), ("dbp_mae", "DBP MAE"),
+                                  ("sbp_rmse", "SBP RMSE"), ("dbp_rmse", "DBP RMSE")):
+                expected = mean(float(row[column]) for row in rows if row["model"] == model)
+                self.assertAlmostEqual(table.loc[label, shown], expected, delta=0.005)
+
+        weights = json.loads((ROOT / "configs/selected_models.json").read_text())["models"]["recommended"]
+        self.assertAlmostEqual(sum(weights.values()), 1.0)
+        text = " ".join(element.value for element in app.markdown)
+        self.assertIn(f"{weights['cnn_c']:.0%} Short CNN", text)
+
     def test_bundle_replays_release_prediction_and_rejects_flat_input(self):
         import numpy as np
         from models.selected_models import load_selected_model

@@ -75,3 +75,64 @@ with st.expander("How to interpret this demo"):
     st.write("The standalone ResNet averaged validation MAE of 11.51 mmHg systolic and 5.97 mmHg diastolic "
              "across three seeds. Those aggregate results do not describe the error on every example. "
              "The test set remains reserved, and patient identities are unavailable.")
+
+# Saved validation results only: nothing below runs a model.
+REPORTS = ROOT / "reports/final"
+COMPARED_MODELS = {
+    "training_median": "Training-median baseline",
+    "lightgbm_16": "LightGBM (16 PPG features)",
+    "cnn_c": "Short CNN",
+    "resnet_l1": "ResNet (L1, standalone)",
+    "recommended": "Recommended ensemble",
+}
+ENSEMBLE_PARTS = {"multitask_resnet": "multi-task ResNet", "cnn_c": "Short CNN", "lightgbm_16": "LightGBM"}
+METRIC_COLUMNS = {"sbp_mae": "SBP MAE", "dbp_mae": "DBP MAE", "sbp_rmse": "SBP RMSE", "dbp_rmse": "DBP RMSE"}
+
+
+@st.cache_data
+def validation_comparison():
+    metrics = pd.concat([pd.read_csv(REPORTS / "selected_metrics.csv"),
+                         pd.read_csv(REPORTS / "cnn_metrics.csv")], ignore_index=True)
+    validation = metrics[metrics["split"].eq("validation")]
+    return validation.groupby("model")[list(METRIC_COLUMNS)].mean().reindex(list(COMPARED_MODELS))
+
+
+@st.cache_data
+def ensemble_weights():
+    import json
+    config = json.loads((ROOT / "configs/selected_models.json").read_text())
+    return config["models"]["recommended"]
+
+
+st.divider()
+st.subheader("How the models compare")
+st.caption("Validation results averaged over three training seeds (the constant baseline needs one). "
+           "These are not final test results: the test set remains reserved.")
+comparison = validation_comparison()
+table = comparison.rename(index=COMPARED_MODELS, columns=METRIC_COLUMNS).rename_axis("Model").reset_index()
+st.dataframe(table.round(2), hide_index=True)
+st.caption("Errors in mmHg on the validation split; lower is better.")
+st.image(str(REPORTS / "plots/selected_comparison.png"), caption="Validation MAE by model (saved project chart).")
+
+with st.expander("What MAE and RMSE mean"):
+    st.write("**MAE** (mean absolute error) is the average distance between the estimate and the reference "
+             "pressure, in mmHg. **RMSE** (root mean squared error) also measures typical error, but squares "
+             "each error first, so a few large misses raise it more than MAE.")
+
+cnn, baseline = comparison.loc["cnn_c"], comparison.loc["training_median"]
+better = [COMPARED_MODELS[name] for name in comparison.index if comparison.loc[name, "sbp_mae"] < cnn["sbp_mae"]]
+with st.expander("How the Short CNN compares"):
+    st.write(f"The Short CNN (`cnn_c`) expands the project's original 1D CNN. On validation it averaged "
+             f"{cnn['sbp_mae']:.2f} mmHg SBP and {cnn['dbp_mae']:.2f} mmHg DBP MAE, "
+             f"{1 - cnn['sbp_mae'] / baseline['sbp_mae']:.0%} and {1 - cnn['dbp_mae'] / baseline['dbp_mae']:.0%} "
+             f"lower than always predicting the training median.")
+    if better:
+        st.write(f"Lower SBP MAE than the Short CNN: {', '.join(better)}.")
+    st.write("The ResNet (L1) row is a standalone model. It is not the multi-task ResNet inside the ensemble, "
+             "which has no separate saved result here.")
+    weights = ensemble_weights()
+    parts = " + ".join(f"{weight:.0%} {ENSEMBLE_PARTS.get(name, name)}" for name, weight in weights.items())
+    st.write(f"The recommended ensemble averages its components' estimates in mmHg: {parts}. "
+             "The weights come from the project configuration; how they were selected is not documented "
+             "in the repository.")
+    st.write("None of these results establish clinical accuracy or performance on new patients.")
