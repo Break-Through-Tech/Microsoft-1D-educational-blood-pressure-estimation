@@ -17,15 +17,29 @@ ASSETS = Path(__file__).resolve().parent / "assets"
 st.set_page_config(page_title="CufflessAI | Live prediction", page_icon="〰️")
 st.title("CufflessAI")
 st.subheader("From a pulse waveform to a pressure estimate")
-st.write("Choose a five-second optical pulse signal, then run a trained ResNet on CPU.")
+st.write("Choose a five-second optical pulse signal, then run a trained ResNet and Short CNN on CPU.")
 st.info("Educational prototype. These estimates are not for medical decisions.")
+
+LIVE_MODELS = {"resnet_l1": "ResNet (L1)", "cnn_c": "Short CNN"}
 
 
 @st.cache_resource
-def predictor_resource():
-    # One shared model per server process; bound concurrent CPU work.
+def predictor_resource(model):
+    # One shared copy of each model per server process, cached separately.
     from models.selected_models import load_selected_model
-    return load_selected_model("resnet_l1", seed=2026, artifact_dir=ASSETS), Lock()
+    return load_selected_model(model, seed=2026, artifact_dir=ASSETS)
+
+
+@st.cache_resource
+def prediction_lock():
+    # Bound concurrent CPU work across sessions.
+    return Lock()
+
+
+def log_failure(model, error):
+    # Detailed diagnostics stay in server logs.
+    import logging
+    logging.getLogger(__name__).exception("Live prediction failed for %s: %s", model, error)
 
 
 @st.cache_data
@@ -45,36 +59,51 @@ st.line_chart(pd.DataFrame({"Time (seconds)": np.arange(625) / 125,
               x="Time (seconds)", y="PPG (source units)")
 
 if st.button("Predict blood pressure", type="primary"):
-    try:
-        with st.spinner("Running live prediction…"):
-            predictor, lock = predictor_resource()
-            started = perf_counter()
-            with lock:
-                result = predictor.predict_ppg(signals[selected:selected + 1], [window_id]).iloc[0]
-            elapsed = perf_counter() - started
-        if result["rejection_reason"]:
-            st.warning(f"This signal could not be processed: {result['rejection_reason']}")
-        else:
-            sbp, dbp = st.columns(2)
-            sbp.metric("Estimated systolic pressure", f"{result['predicted_sbp']:.1f} mmHg")
-            dbp.metric("Estimated diastolic pressure", f"{result['predicted_dbp']:.1f} mmHg")
-            reference = references.loc[window_id]
-            st.write(f"Reference for this example: **{reference['sbp']:.1f} / {reference['dbp']:.1f} mmHg**.")
-            st.caption(f"Calculated now from the selected waveform in {elapsed:.2f} seconds (excluding model loading).")
-    except (OSError, ValueError, RuntimeError) as error:
+    window = signals[selected:selected + 1]  # Both models receive this same window.
+    results = {}
+    with st.spinner("Running live prediction…"):
+        predictors = {}
+        for model in LIVE_MODELS:
+            try:
+                predictors[model] = predictor_resource(model)
+            except (OSError, ValueError, RuntimeError) as error:
+                log_failure(model, error)
+        started = perf_counter()
+        with prediction_lock():
+            for model, predictor in predictors.items():
+                try:
+                    results[model] = predictor.predict_ppg(window, [window_id]).iloc[0]
+                except (OSError, ValueError, RuntimeError) as error:
+                    log_failure(model, error)
+        elapsed = perf_counter() - started
+    rejected = [result["rejection_reason"] for result in results.values() if result["rejection_reason"]]
+    if not results:
         st.error("Prediction failed. Please retry or contact the project team.")
-        # Detailed diagnostics stay in server logs.
-        import logging
-        logging.getLogger(__name__).exception("Live prediction failed: %s", error)
+    elif rejected:
+        st.warning(f"This signal could not be processed: {rejected[0]}")
+    else:
+        for column, (model, label) in zip(st.columns(2), LIVE_MODELS.items()):
+            column.markdown(f"#### {label}")
+            if model in results:
+                column.metric("Estimated systolic blood pressure", f"{results[model]['predicted_sbp']:.1f} mmHg")
+                column.metric("Estimated diastolic blood pressure", f"{results[model]['predicted_dbp']:.1f} mmHg")
+            else:
+                column.warning(f"The {label} is unavailable right now. Other results are unaffected.")
+        reference = references.loc[window_id]
+        st.write(f"Reference for this example: **{reference['sbp']:.1f} / {reference['dbp']:.1f} mmHg**.")
+        st.caption(f"Both models used the same selected waveform, calculated now in {elapsed:.2f} seconds "
+                   "(excluding model loading). This example comes from a training recording, not unseen patient data.")
 
 st.divider()
-st.caption("MVP: standalone ResNet, seed 2026. The recommended three-model ensemble is not loaded in this demo.")
+st.caption("Live models: standalone ResNet (L1) and Short CNN (`cnn_c`), seed 2026. "
+           "The recommended three-model ensemble is not run live in this demo.")
 with st.expander("How to interpret this demo"):
     st.write("Input: 625 PPG samples at 125 Hz. The saved pipeline filters the waveform, calculates derivatives, "
              "and applies training-fitted scaling before predicting systolic and diastolic pressure.")
     st.write("The standalone ResNet averaged validation MAE of 11.51 mmHg systolic and 5.97 mmHg diastolic "
              "across three seeds. Those aggregate results do not describe the error on every example. "
              "The test set remains reserved, and patient identities are unavailable.")
+    st.write("See **How the models compare** below for the Short CNN's and other models' validation errors.")
 
 # Saved validation results only: nothing below runs a model.
 REPORTS = ROOT / "reports/final"

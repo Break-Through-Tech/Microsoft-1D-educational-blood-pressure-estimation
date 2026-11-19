@@ -56,11 +56,40 @@
           21
         ]
       }
+    },
+    "cnn_c": {
+      "family": "cnn",
+      "parameters": {
+        "representation": "derivatives",
+        "normalization": "global",
+        "channels": [
+          16,
+          32,
+          64
+        ],
+        "learning_rate": 0.001,
+        "weight_decay": 0.0001,
+        "batch_size": 256
+      },
+      "durations": {
+        "2026": [
+          48
+        ],
+        "2027": [
+          53
+        ],
+        "2028": [
+          63
+        ]
+      }
     }
   },
   "models": {
     "resnet_l1": {
       "resnet_l1": 1.0
+    },
+    "cnn_c": {
+      "cnn_c": 1.0
     }
   },
   "selection": "Frozen inner-selected configurations and fixed per-seed full-training durations; no original-validation reselection."

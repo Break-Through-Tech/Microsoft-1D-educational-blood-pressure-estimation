@@ -1,16 +1,19 @@
 # CufflessAI live prediction MVP
 
 Select a bundled five-second PPG waveform and click **Predict blood pressure**.
-The app runs the standalone ResNet (seed 2026) on CPU, using the project's shared
-preprocessing and prediction code. Outputs are calculated live; the bundle has
-no saved predictions. It contains one checkpoint and twelve training examples,
-about 288 KB total. Reference pressures are displayed only for comparison.
+The app runs two standalone models (seed 2026) on CPU, on the same selected
+waveform: the ResNet (L1) and the Short CNN (`cnn_c`), using the project's shared
+preprocessing and prediction code. The recommended ensemble is not run live.
+Outputs are calculated live; the bundle has no saved predictions. It contains
+two checkpoints and twelve training examples, about 347 KB total. Reference
+pressures are displayed once, only for comparison.
 
-The checkpoint and PPG examples are copied unchanged from the `modeling-v1`
-release's `selected-v1` bundle. The demo config retains only `resnet_l1`, seed
-2026; reference columns are extracted from the release's example table. The
-local manifest records checksums, and the shared loader verifies the config and
-checkpoint before loading.
+The checkpoints and PPG examples are copied unchanged from the `modeling-v1`
+release's `selected-v1` bundle. The demo config retains only `resnet_l1` and
+`cnn_c`, seed 2026; reference columns are extracted from the release's example
+table. The local manifest records checksums, and the shared loader verifies the
+config and each checkpoint before loading. If the Short CNN cannot be loaded,
+the ResNet result is still shown.
 
 ## Run locally
 
@@ -40,7 +43,7 @@ Verify the UI and bundled inference:
    `demo/streamlit_app.py`.
 4. In **Advanced settings**, choose **Python 3.13**, then deploy.
 5. Select an example and click **Predict blood pressure**. Confirm that two
-   pressure estimates appear; switch examples and predict again.
+   pressure estimates appear for each model; switch examples and predict again.
 
 Community Cloud finds `demo/requirements.txt` beside the entrypoint before the
 root requirements file. Do not select the training requirements. Model assets
@@ -63,10 +66,10 @@ took 0.37 seconds. Windows memory accounting differs from Linux container
 accounting, so these numbers are evidence for trying deployment, not a promise
 that the lowest cloud allocation is sufficient.
 
-Start with this single model. After a cloud smoke test, check the app logs and
-memory behavior before adding the short CNN, then LightGBM/the full ensemble.
-Keep one cached model per process, serialize inference, and bound requests to
-one bundled waveform. Do not load full datasets or train on the host.
+The ResNet started alone; the short CNN (about 57 KB) has now been added. After
+redeploying, check the app logs and memory behavior again before adding
+LightGBM/the full ensemble. Keep one cached copy of each model per process,
+serialize inference, and bound requests to one bundled waveform. Do not load full datasets or train on the host.
 
 The bundled examples are training data and do not demonstrate generalization.
 This is an educational prototype, not a clinical tool. The held-out test set
