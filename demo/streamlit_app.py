@@ -50,6 +50,34 @@ def examples():
     return signals, ids, references
 
 
+# Loaders for saved validation results; they run no model.
+REPORTS = ROOT / "reports/final"
+COMPARED_MODELS = {
+    "training_median": "Training-median baseline",
+    "lightgbm_16": "LightGBM (16 PPG features)",
+    "cnn_c": "Short CNN",
+    "resnet_l1": "ResNet (L1, standalone)",
+    "recommended": "Recommended ensemble",
+}
+ENSEMBLE_PARTS = {"multitask_resnet": "multi-task ResNet", "cnn_c": "Short CNN", "lightgbm_16": "LightGBM"}
+METRIC_COLUMNS = {"sbp_mae": "SBP MAE", "dbp_mae": "DBP MAE", "sbp_rmse": "SBP RMSE", "dbp_rmse": "DBP RMSE"}
+
+
+@st.cache_data
+def validation_comparison():
+    metrics = pd.concat([pd.read_csv(REPORTS / "selected_metrics.csv"),
+                         pd.read_csv(REPORTS / "cnn_metrics.csv")], ignore_index=True)
+    validation = metrics[metrics["split"].eq("validation")]
+    return validation.groupby("model")[list(METRIC_COLUMNS)].mean().reindex(list(COMPARED_MODELS))
+
+
+@st.cache_data
+def ensemble_weights():
+    import json
+    config = json.loads((ROOT / "configs/selected_models.json").read_text())
+    return config["models"]["recommended"]
+
+
 signals, ids, references = examples()
 selected = st.selectbox("Example PPG signal", range(len(ids)), format_func=lambda i: f"Example {i + 1}")
 window_id = ids[selected]
@@ -98,40 +126,29 @@ st.divider()
 st.caption("Live models: standalone ResNet (L1) and Short CNN (`cnn_c`), seed 2026. "
            "The recommended three-model ensemble is not run live in this demo.")
 with st.expander("How to interpret this demo"):
-    st.write("Input: 625 PPG samples at 125 Hz. The saved pipeline filters the waveform, calculates derivatives, "
-             "and applies training-fitted scaling before predicting systolic and diastolic pressure.")
-    st.write("The standalone ResNet averaged validation MAE of 11.51 mmHg systolic and 5.97 mmHg diastolic "
-             "across three seeds. Those aggregate results do not describe the error on every example. "
-             "The test set remains reserved, and patient identities are unavailable.")
-    st.write("See **How the models compare** below for the Short CNN's and other models' validation errors.")
-
-# Saved validation results only: nothing below runs a model.
-REPORTS = ROOT / "reports/final"
-COMPARED_MODELS = {
-    "training_median": "Training-median baseline",
-    "lightgbm_16": "LightGBM (16 PPG features)",
-    "cnn_c": "Short CNN",
-    "resnet_l1": "ResNet (L1, standalone)",
-    "recommended": "Recommended ensemble",
-}
-ENSEMBLE_PARTS = {"multitask_resnet": "multi-task ResNet", "cnn_c": "Short CNN", "lightgbm_16": "LightGBM"}
-METRIC_COLUMNS = {"sbp_mae": "SBP MAE", "dbp_mae": "DBP MAE", "sbp_rmse": "SBP RMSE", "dbp_rmse": "DBP RMSE"}
-
-
-@st.cache_data
-def validation_comparison():
-    metrics = pd.concat([pd.read_csv(REPORTS / "selected_metrics.csv"),
-                         pd.read_csv(REPORTS / "cnn_metrics.csv")], ignore_index=True)
-    validation = metrics[metrics["split"].eq("validation")]
-    return validation.groupby("model")[list(METRIC_COLUMNS)].mean().reindex(list(COMPARED_MODELS))
-
-
-@st.cache_data
-def ensemble_weights():
-    import json
-    config = json.loads((ROOT / "configs/selected_models.json").read_text())
-    return config["models"]["recommended"]
-
+    saved = validation_comparison()
+    resnet, cnn = saved.loc["resnet_l1"], saved.loc["cnn_c"]
+    beaten = [COMPARED_MODELS[name] for name in ("training_median", "lightgbm_16")
+              if (cnn[["sbp_mae", "dbp_mae"]] < saved.loc[name, ["sbp_mae", "dbp_mae"]]).all()]
+    resnet_lower = (resnet[["sbp_mae", "dbp_mae"]] < cnn[["sbp_mae", "dbp_mae"]]).all()
+    cnn_note = ""
+    if beaten:
+        cnn_note = f" It had lower errors than the {' and '.join(beaten)}"
+        cnn_note += ", although the ResNet's errors were lower." if resnet_lower else "."
+    st.write("**Input:** 625 PPG samples at 125 Hz (5 seconds). The saved pipeline filters the waveform, "
+             "calculates its first and second derivatives, and applies training-based scaling before "
+             "predicting systolic and diastolic blood pressure.")
+    st.write(f"**ResNet (L1):** validation mean absolute error (MAE) of **{resnet['sbp_mae']:.2f} mmHg systolic** "
+             f"and **{resnet['dbp_mae']:.2f} mmHg diastolic**.")
+    st.write(f"**Short CNN:** validation MAE of **{cnn['sbp_mae']:.2f} mmHg systolic** and "
+             f"**{cnn['dbp_mae']:.2f} mmHg diastolic**.{cnn_note}")
+    st.write("**How to read the predictions:** both models receive the same selected PPG example and estimate "
+             "blood pressure independently. Compare each estimate with the shared reference shown with the "
+             "predictions: the closer estimate has the smaller error for that example.")
+    st.write("These validation results average three training seeds and do not describe the error on every "
+             "example. The bundled examples come from training recordings, so they are not evidence of "
+             "performance on new patients. The test set remains reserved, and patient identities are unavailable.")
+    st.write("See **How the models compare** below for the full results.")
 
 st.divider()
 st.subheader("How the models compare")
