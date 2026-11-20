@@ -1,9 +1,10 @@
 {
   "format_version": 1,
   "sha256": {
-    "config.json": "083428d08f42d667c8d0456bc1359bf182e3e7f55f17da50f7a68301b83f3de8",
-    "samples/ppg.npz": "903e85fe83091d866a066c7f4c576008e5de3cef0c7a53221ef6755dcd1f5379",
+    "config.json": "633735619e03bdfedcede633d14b4f9e7cc028dc64359da438172d09fda6717d",
     "samples/references.csv": "97d908a9c572fac39017cbfed80e339b9a52324e6ca36a9d577ebc3702f817bc",
+    "samples/ppg.npz": "903e85fe83091d866a066c7f4c576008e5de3cef0c7a53221ef6755dcd1f5379",
+    "components/cnn_c/seed_2026/model.pt": "9ca31dbdb10bd82edc70601c07e57ab66c62525e59c7fd1500a7f5e0e9c14189",
     "components/resnet_l1/seed_2026/model.pt": "8e3c4a8a82bc96d0a27b5ddcd431bb8e5c4ba2d63f822d77aabdd0cf1ead1613"
   }
 }
